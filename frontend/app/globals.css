@@ -1,0 +1,196 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Niti.ai Light Theme - Official */
+  --background: #F8FAFC;
+  --foreground: #1e293b;
+  --card: #ffffff;
+  --card-foreground: #1e293b;
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+  --primary: #1e3a8a;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #FF9933;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #1e3a8a;
+  --radius: 0.75rem;
+  
+  /* Custom Niti.ai tokens */
+  --saffron: #FF9933;
+  --royal-blue: #1e3a8a;
+  --dot-color: #94a3b8;
+  
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1e293b;
+  --sidebar-primary: #1e3a8a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #1e293b;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #1e3a8a;
+}
+
+.dark {
+  /* Niti.ai Dark Theme - Stealth */
+  --background: #212121;
+  --foreground: #f8fafc;
+  --card: #2a2a2a;
+  --card-foreground: #f8fafc;
+  --popover: #2a2a2a;
+  --popover-foreground: #f8fafc;
+  --primary: #f8fafc;
+  --primary-foreground: #212121;
+  --secondary: #333333;
+  --secondary-foreground: #f8fafc;
+  --muted: #333333;
+  --muted-foreground: #94a3b8;
+  --accent: #FF9933;
+  --accent-foreground: #212121;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #404040;
+  --input: #404040;
+  --ring: #FF9933;
+  
+  --saffron: #FF9933;
+  --royal-blue: #3b82f6;
+  --dot-color: rgba(255, 255, 255, 0.15);
+  
+  --sidebar: #1a1a1a;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #FF9933;
+  --sidebar-primary-foreground: #212121;
+  --sidebar-accent: #333333;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #404040;
+  --sidebar-ring: #FF9933;
+}
+
+@theme inline {
+  --font-sans: 'Geist', 'Geist Fallback', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback', monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-saffron: var(--saffron);
+  --color-royal-blue: var(--royal-blue);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Dot grid pattern */
+.dot-grid-light {
+  background-image: radial-gradient(circle, #94a3b8 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+}
+
+.dot-grid-dark {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.15) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .glass {
+  background: rgba(33, 33, 33, 0.8);
+}
+
+/* Scrollbar styling */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 3px;
+  opacity: 0.5;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground);
+}
+
+/* Ripple animation */
+@keyframes ripple {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 153, 51, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(255, 153, 51, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 153, 51, 0);
+  }
+}
+
+.ripple-animation {
+  animation: ripple 2s infinite;
+}
+
+/* Pulsing cursor */
+@keyframes pulse-cursor {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.pulse-cursor {
+  animation: pulse-cursor 1s ease-in-out infinite;
+}
