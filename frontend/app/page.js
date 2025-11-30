@@ -11,9 +11,11 @@ function BotMessage({ content, isTyping, isDark }) {
     <div className="flex gap-2 w-full justify-start">
       <div className={`msg-bubble-bot`}>
         {isTyping ? (
-          <div className="flex items-center gap-2">
-            <span className="text-xs opacity-70">Thinking</span>
-            <span className={`w-2 h-2 rounded-full animate-pulse ${isDark ? "bg-white" : "bg-black"}`} />
+          <div className="flex items-center gap-2 py-1">
+            {/* Thinking Text */}
+            <span className="text-sm font-medium opacity-70">Niti is thinking</span>
+            {/* The Black Ball Pulse Animation */}
+            <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${isDark ? "bg-white" : "bg-black"}`} />
           </div>
         ) : (
           <div className="text-sm md:text-base leading-relaxed whitespace-pre-wrap">
@@ -57,14 +59,14 @@ export default function NitiPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Ye State important hai
   const [messages, setMessages] = useState([
     { id: 1, role: "assistant", content: "Namaste! 🙏 I am Niti.ai. Ask me anything about Indian Government schemes." }
   ]);
   
   const messagesEndRef = useRef(null);
 
-  // Desktop check: Open sidebar by default on large screens
+  // Desktop check
   useEffect(() => {
     if (window.innerWidth > 768) setIsSidebarOpen(true);
   }, []);
@@ -101,6 +103,8 @@ export default function NitiPage() {
     setInput("");
     
     setMessages(prev => [...prev, { id: Date.now(), role: "user", content: userText }]);
+    
+    // START LOADING (Thinking Animation aayega)
     setIsLoading(true);
 
     try {
@@ -110,6 +114,8 @@ export default function NitiPage() {
         body: JSON.stringify({ text: userText }),
       });
       const data = await res.json();
+      
+      // STOP LOADING (Response aane par animation hatega)
       setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: data.response || "No response." }]);
     } catch (error) {
       setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: "⚠️ Network Error." }]);
@@ -125,15 +131,10 @@ export default function NitiPage() {
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
 
       {/* --- SIDEBAR --- */}
-      {/* Mobile Overlay */}
       {isSidebarOpen && (
-        <div 
-          onClick={() => setIsSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
-        />
+        <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"/>
       )}
 
-      {/* Sidebar Content */}
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.aside
@@ -160,12 +161,9 @@ export default function NitiPage() {
 
       {/* --- MAIN CONTENT --- */}
       <main className="niti-main">
-        {/* Header */}
         <header className="niti-header">
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsSidebarOpen(true)} className="p-1 md:hidden">
-              <Menu size={24} />
-            </button>
+            <button onClick={() => setIsSidebarOpen(true)} className="p-1 md:hidden"><Menu size={24} /></button>
             <div>
               <h1 className="font-bold text-lg leading-tight">Niti.ai</h1>
               <p className="text-[10px] opacity-80">GOVT SCHEME ASSISTANT</p>
@@ -187,7 +185,12 @@ export default function NitiPage() {
               )}
             </div>
           ))}
-          {isLoading && <BotMessage content="" isTyping={true} isDark={isDark} />}
+          
+          {/* YAHAN HAI WO MAGIC CODE - THINKING ANIMATION */}
+          {isLoading && (
+             <BotMessage content="" isTyping={true} isDark={isDark} />
+          )}
+          
           <div ref={messagesEndRef} className="h-1" />
         </div>
 
@@ -202,20 +205,13 @@ export default function NitiPage() {
               placeholder="Ask about schemes..."
               className="flex-1 bg-transparent border-none outline-none text-sm md:text-base dark:text-white dark:placeholder:text-gray-500 text-slate-900"
             />
-            
-            <button onClick={startListening} className="p-2 bg-orange-500 rounded-full text-white hover:bg-orange-600 transition shadow-lg shrink-0">
-              <Mic size={20} />
-            </button>
-
+            <button onClick={startListening} className="p-2 bg-orange-500 rounded-full text-white hover:bg-orange-600 transition shadow-lg shrink-0"><Mic size={20} /></button>
             {input.trim() && (
-              <button onClick={handleSend} className="p-2 bg-blue-600 rounded-full text-white hover:bg-blue-700 transition shrink-0">
-                <Send size={18} />
-              </button>
+              <button onClick={handleSend} className="p-2 bg-blue-600 rounded-full text-white hover:bg-blue-700 transition shrink-0"><Send size={18} /></button>
             )}
           </div>
         </div>
       </main>
-
     </div>
   );
 }
