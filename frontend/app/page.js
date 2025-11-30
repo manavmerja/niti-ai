@@ -2,111 +2,59 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Plus, Sun, Moon, Send, Mic, User, MessageSquare, ChevronLeft, Mail, ShieldCheck } from 'lucide-react';
+import { Menu, X, Plus, Sun, Moon, Send, Mic, User, ShieldCheck, Mail } from 'lucide-react';
 
-// --- HELPER COMPONENTS ---
-
-function TypingIndicator({ isDark }) {
-  return (
-    <div className="flex items-center gap-2 p-2">
-      <span className="text-sm opacity-70">Niti is thinking</span>
-      <span
-        className={`inline-block w-2.5 h-2.5 rounded-full animate-pulse ${
-          isDark ? "bg-white" : "bg-black"
-        }`}
-      />
-    </div>
-  );
-}
+// --- COMPONENTS ---
 
 function BotMessage({ content, isTyping, isDark }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="flex gap-3 max-w-2xl w-full"
-    >
-      <div className="w-1 rounded-full shrink-0 bg-[#FF9933]" />
-      <div className="py-1">
+    <div className="flex gap-2 w-full justify-start">
+      <div className={`msg-bubble-bot`}>
         {isTyping ? (
-          <TypingIndicator isDark={isDark} />
+          <div className="flex items-center gap-2">
+            <span className="text-xs opacity-70">Thinking</span>
+            <span className={`w-2 h-2 rounded-full animate-pulse ${isDark ? "bg-white" : "bg-black"}`} />
+          </div>
         ) : (
-          <div className="leading-relaxed whitespace-pre-wrap">
-             {content.split('\n').map((line, i) => (
-               <p key={i} className="mb-1">{line}</p>
-             ))}
+          <div className="text-sm md:text-base leading-relaxed whitespace-pre-wrap">
+             {content}
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 function UserMessage({ content }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="flex justify-end w-full"
-    >
-      <div className="bg-blue-600 text-white px-5 py-3 rounded-2xl rounded-br-none max-w-[85%] shadow-md shadow-blue-500/10">
-        <p className="leading-relaxed">{content}</p>
+    <div className="flex w-full justify-end">
+      <div className="msg-bubble-user text-sm md:text-base">
+        {content}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 function AuthModal({ isOpen, onClose }) {
+  if (!isOpen) return null;
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-            onClick={onClose}
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[90%] max-w-sm p-6 rounded-2xl bg-white dark:bg-[#1a1a1a] shadow-2xl border border-slate-200 dark:border-slate-800"
-          >
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-slate-800 dark:text-white">Niti.ai</span>
-                <span className="text-xl">🇮🇳</span>
-              </div>
-              <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
-            </div>
-
-            <h2 className="text-lg font-semibold mb-2 text-slate-900 dark:text-white">Welcome Back</h2>
-            <p className="text-sm text-slate-500 mb-6">Sign in to save your chat history.</p>
-
-            <button className="w-full py-3 px-4 bg-slate-900 dark:bg-white text-white dark:text-black rounded-xl font-medium mb-3 flex items-center justify-center gap-2 hover:opacity-90 transition">
-              <Mail size={18} />
-              Continue with Email
-            </button>
-            
-            <button className="w-full py-3 px-4 border border-slate-200 dark:border-slate-700 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-300">
-              Google
-            </button>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+        <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+          <X size={20} className="text-gray-500" />
+        </button>
+        <h2 className="text-xl font-bold text-center mb-2 dark:text-white">Welcome</h2>
+        <p className="text-center text-sm text-gray-500 mb-6">Sign in to Niti.ai</p>
+        <button className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium mb-3">Sign in with Google</button>
+      </div>
+    </div>
   );
 }
 
-// --- MAIN PAGE COMPONENT ---
+// --- MAIN PAGE ---
 export default function NitiPage() {
-  // STATE: Default isDark = true (Black Theme)
   const [isDark, setIsDark] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile pe sidebar band rakho initially
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -116,31 +64,34 @@ export default function NitiPage() {
   
   const messagesEndRef = useRef(null);
 
-  // Initial Check for Desktop vs Mobile
+  // Theme Toggle
   useEffect(() => {
-    if (window.innerWidth > 768) {
-      setIsSidebarOpen(true);
-    }
-  }, []);
-
-  // Toggle Theme Class
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    if (isDark) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
   }, [isDark]);
 
   // Auto Scroll
-  useEffect(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
+  }
+  useEffect(() => { scrollToBottom() }, [messages, isLoading]);
 
-  // Handle Send Message
+  // Voice Logic
+  const startListening = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-IN';
+      recognition.onresult = (event) => setInput(event.results[0][0].transcript);
+      recognition.start();
+    } else {
+      alert("Voice input not supported in this browser.");
+    }
+  };
+
+  // Send Logic
   const handleSend = async () => {
     if (!input.trim()) return;
-
     const userText = input;
     setInput("");
     
@@ -148,180 +99,117 @@ export default function NitiPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('https://niti-backend.onrender.com/chat', { // Render URL
+      const res = await fetch('https://niti-backend.onrender.com/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: userText }),
       });
-
       const data = await res.json();
-
-      setMessages(prev => [...prev, { 
-        id: Date.now() + 1, 
-        role: "assistant", 
-        content: data.response || "Sorry, I couldn't understand that." 
-      }]);
-
+      setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: data.response || "No response." }]);
     } catch (error) {
-      console.error(error);
-      setMessages(prev => [...prev, { 
-        id: Date.now() + 1, 
-        role: "assistant", 
-        content: "⚠️ Network Error: Is the Backend running?" 
-      }]);
+      setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: "⚠️ Network Error." }]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const bgClass = isDark 
-    ? "bg-[#212121] text-slate-100 dot-grid-dark" 
-    : "bg-[#F8FAFC] text-slate-900 dot-grid-light";
-
   return (
-    <div className={`flex h-screen font-sans overflow-hidden transition-colors duration-300 ${bgClass}`}>
+    // MAIN LAYOUT CONTAINER (100dvh for Mobile)
+    <div className={`niti-layout ${isDark ? 'dark' : ''}`}>
       
+      {/* Background Pattern */}
+      <div className="niti-bg-pattern"></div>
+
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
 
-      {/* --- SIDEBAR --- */}
-      <AnimatePresence mode="wait">
+      {/* --- SIDEBAR (Mobile Drawer) --- */}
+      <AnimatePresence>
         {isSidebarOpen && (
-          <motion.aside
-            initial={{ x: -280, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -280, opacity: 0 }}
-            className={`w-[280px] flex-none flex flex-col z-30 absolute md:relative h-full border-r shadow-2xl md:shadow-none ${
-              isDark ? "bg-[#1a1a1a] border-[#333]" : "bg-white border-slate-200"
-            }`}
-          >
-            {/* Sidebar Header */}
-            <div className="p-4 flex items-center gap-3">
-              <div className="w-8 h-8 rounded bg-gradient-to-br from-orange-500 via-white to-green-500 p-[1px]">
-                 <div className={`w-full h-full rounded flex items-center justify-center font-bold ${isDark ? 'bg-[#1a1a1a]' : 'bg-white'}`}>N</div>
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setIsSidebarOpen(false)}
+              className="absolute inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+            />
+            <motion.aside
+              initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="niti-sidebar w-[280px] h-full absolute z-50 flex flex-col shadow-2xl"
+            >
+              <div className="p-4 flex items-center justify-between border-b border-[var(--sidebar-border)]">
+                <span className="font-bold text-xl dark:text-white">Niti.ai</span>
+                <button onClick={() => setIsSidebarOpen(false)}><X size={24} className="text-gray-500" /></button>
               </div>
-              <span className="font-bold text-lg">Niti.ai</span>
-              <button onClick={() => setIsSidebarOpen(false)} className="md:hidden ml-auto p-2 bg-slate-800/10 rounded-full">
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="px-3 mb-4">
-              <button 
-                onClick={() => setMessages([{ id: 1, role: "assistant", content: "Namaste! New conversation started." }])}
-                className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-all ${
-                  isDark ? "border-[#333] hover:bg-[#2a2a2a]" : "border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                <Plus size={16} />
-                <span>New Chat</span>
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-3 space-y-4">
-              <p className="text-xs font-semibold opacity-50 px-2">RECENT</p>
-              {["PM Kisan Yojana", "Scholarships 2024", "Mudra Loan"].map((item, i) => (
-                <button key={i} className={`w-full text-left px-2 py-2 rounded-md text-sm truncate transition ${
-                  isDark ? "hover:bg-[#2a2a2a] text-slate-300" : "hover:bg-slate-100 text-slate-700"
-                }`}>
-                  {item}
+              <div className="p-4">
+                <button onClick={() => setMessages([])} className="w-full flex items-center gap-2 p-3 rounded-lg border border-[var(--sidebar-border)] dark:text-white">
+                  <Plus size={18} /> New Chat
                 </button>
-              ))}
-            </div>
-
-            <div className={`p-4 border-t ${isDark ? "border-[#333]" : "border-slate-200"}`}>
-               <button 
-                 onClick={() => setShowAuth(true)}
-                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-all ${
-                   isDark ? "hover:bg-[#2a2a2a]" : "hover:bg-slate-100"
-                 }`}
-               >
-                 <User size={18} />
-                 <span>Sign In</span>
-               </button>
-            </div>
-          </motion.aside>
+              </div>
+              <div className="mt-auto p-4 border-t border-[var(--sidebar-border)]">
+                <button onClick={() => { setShowAuth(true); setIsSidebarOpen(false); }} className="flex items-center gap-2 text-sm dark:text-white">
+                  <User size={18} /> Sign In
+                </button>
+              </div>
+            </motion.aside>
+          </>
         )}
       </AnimatePresence>
 
-      {/* --- MAIN CHAT AREA --- */}
-      <main className="flex-1 flex flex-col relative h-full w-full">
-        
-        {/* Header */}
-        <header className={`h-16 flex items-center justify-between px-4 sticky top-0 z-10 backdrop-blur-md ${
-           isDark ? "bg-[#212121]/80" : "bg-[#1e3a8a] text-white shadow-md"
-        }`}>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setIsSidebarOpen(true)} className="p-2 rounded hover:bg-white/10 md:hidden">
-              <Menu size={20} />
-            </button>
-            <div className="flex flex-col">
-              <span className="font-semibold text-sm">Niti.ai Assistant</span>
-              <span className="text-[10px] opacity-80">GOVT OF INDIA</span>
-            </div>
-          </div>
-          <button 
-            onClick={() => setIsDark(!isDark)}
-            className="p-2 rounded-full hover:bg-white/10 transition"
-          >
-            {isDark ? <Sun size={20} /> : <Moon size={20} />}
+      {/* --- HEADER (Fixed Top) --- */}
+      <header className="niti-header">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setIsSidebarOpen(true)} className="p-1 md:hidden">
+            <Menu size={24} />
           </button>
-        </header>
-
-        {/* Messages List (Extra padding at bottom for mobile input) */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-32 md:pb-36 scroll-smooth">
-          {messages.map((msg) => (
-            <div key={msg.id}>
-              {msg.role === "user" ? (
-                <UserMessage content={msg.content} />
-              ) : (
-                <BotMessage content={msg.content} isDark={isDark} />
-              )}
-            </div>
-          ))}
-
-          {isLoading && (
-            <BotMessage content="" isTyping={true} isDark={isDark} />
-          )}
-          <div ref={messagesEndRef} />
+          <div>
+            <h1 className="font-bold text-lg leading-tight">Niti.ai</h1>
+            <p className="text-[10px] opacity-80">GOVT SCHEME ASSISTANT</p>
+          </div>
         </div>
+        <button onClick={() => setIsDark(!isDark)} className="p-2 bg-white/10 rounded-full">
+          {isDark ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+      </header>
 
-        {/* --- MOBILE OPTIMIZED INPUT AREA --- */}
-        <div className={`fixed bottom-0 left-0 w-full p-3 md:p-6 z-20 ${
-           isDark 
-             ? "bg-gradient-to-t from-[#212121] via-[#212121] to-transparent" 
-             : "bg-gradient-to-t from-[#F8FAFC] via-[#F8FAFC] to-transparent"
-        }`}>
-          <div className={`w-full max-w-2xl mx-auto p-2 rounded-[28px] flex items-center gap-2 border shadow-xl transition-all ${
-            isDark 
-              ? "bg-[#2a2a2a] border-[#444]" 
-              : "bg-white border-slate-200"
-          }`}>
-            
-            <input 
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Ask about any scheme..."
-              className={`flex-1 bg-transparent border-none outline-none px-4 py-3 text-base ${
-                isDark ? "text-white placeholder:text-gray-500" : "text-slate-900 placeholder:text-slate-400"
-              }`}
-            />
-
-            {/* Mic Button */}
-            <button className="p-3 rounded-full bg-[#FF9933] text-white hover:bg-orange-600 transition shadow-lg shrink-0">
-              <Mic size={20} />
-            </button>
-
-            {/* Send Button */}
-            {input.trim() && (
-              <button onClick={handleSend} className="p-3 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition shrink-0">
-                <Send size={18} />
-              </button>
+      {/* --- CHAT AREA (Scrollable Middle) --- */}
+      <div className="niti-chat-area">
+        {messages.map((msg) => (
+          <div key={msg.id}>
+            {msg.role === "user" ? (
+              <UserMessage content={msg.content} />
+            ) : (
+              <BotMessage content={msg.content} isDark={isDark} />
             )}
           </div>
-        </div>
+        ))}
+        {isLoading && <BotMessage content="" isTyping={true} isDark={isDark} />}
+        {/* Invisible div to scroll to */}
+        <div ref={messagesEndRef} className="h-1" />
+      </div>
 
-      </main>
+      {/* --- INPUT AREA (Fixed Bottom) --- */}
+      <div className="niti-input-area">
+        <div className="niti-input-box">
+          <input 
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            onFocus={scrollToBottom} // Keyboard open hone par scroll karo
+            placeholder="Ask about schemes..."
+            className="flex-1 bg-transparent border-none outline-none text-sm md:text-base dark:text-white dark:placeholder:text-gray-500 text-slate-900"
+          />
+          
+          <button onClick={startListening} className="p-2 bg-orange-500 rounded-full text-white hover:bg-orange-600 transition shadow-lg shrink-0">
+            <Mic size={20} />
+          </button>
+
+          {input.trim() && (
+            <button onClick={handleSend} className="p-2 bg-blue-600 rounded-full text-white hover:bg-blue-700 transition shrink-0">
+              <Send size={18} />
+            </button>
+          )}
+        </div>
+      </div>
+
     </div>
   );
 }
