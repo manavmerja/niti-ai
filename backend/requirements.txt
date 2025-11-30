@@ -4,3 +4,5 @@ crewai
 langchain_groq
 langchain_google_genai
 python-dotenv
+litellm
+
