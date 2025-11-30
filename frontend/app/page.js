@@ -38,7 +38,7 @@ function UserMessage({ content }) {
 function AuthModal({ isOpen, onClose }) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
         <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
           <X size={20} className="text-gray-500" />
@@ -63,6 +63,11 @@ export default function NitiPage() {
   ]);
   
   const messagesEndRef = useRef(null);
+
+  // Desktop check: Open sidebar by default on large screens
+  useEffect(() => {
+    if (window.innerWidth > 768) setIsSidebarOpen(true);
+  }, []);
 
   // Theme Toggle
   useEffect(() => {
@@ -114,101 +119,102 @@ export default function NitiPage() {
   };
 
   return (
-    // MAIN LAYOUT CONTAINER (100dvh for Mobile)
     <div className={`niti-layout ${isDark ? 'dark' : ''}`}>
       
-      {/* Background Pattern */}
       <div className="niti-bg-pattern"></div>
-
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
 
-      {/* --- SIDEBAR (Mobile Drawer) --- */}
+      {/* --- SIDEBAR --- */}
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div 
+          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+        />
+      )}
+
+      {/* Sidebar Content */}
       <AnimatePresence>
         {isSidebarOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setIsSidebarOpen(false)}
-              className="absolute inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
-            />
-            <motion.aside
-              initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="niti-sidebar w-[280px] h-full absolute z-50 flex flex-col shadow-2xl"
-            >
-              <div className="p-4 flex items-center justify-between border-b border-[var(--sidebar-border)]">
-                <span className="font-bold text-xl dark:text-white">Niti.ai</span>
-                <button onClick={() => setIsSidebarOpen(false)}><X size={24} className="text-gray-500" /></button>
-              </div>
-              <div className="p-4">
-                <button onClick={() => setMessages([])} className="w-full flex items-center gap-2 p-3 rounded-lg border border-[var(--sidebar-border)] dark:text-white">
-                  <Plus size={18} /> New Chat
-                </button>
-              </div>
-              <div className="mt-auto p-4 border-t border-[var(--sidebar-border)]">
-                <button onClick={() => { setShowAuth(true); setIsSidebarOpen(false); }} className="flex items-center gap-2 text-sm dark:text-white">
-                  <User size={18} /> Sign In
-                </button>
-              </div>
-            </motion.aside>
-          </>
+          <motion.aside
+            initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ duration: 0.2 }}
+            className={`niti-sidebar absolute md:relative shadow-2xl md:shadow-none`}
+          >
+            <div className="p-4 flex items-center justify-between border-b border-[var(--sidebar-border)]">
+              <span className="font-bold text-xl dark:text-white">Niti.ai</span>
+              <button onClick={() => setIsSidebarOpen(false)} className="md:hidden"><X size={24} className="text-gray-500" /></button>
+            </div>
+            <div className="p-4">
+              <button onClick={() => setMessages([])} className="w-full flex items-center gap-2 p-3 rounded-lg border border-[var(--sidebar-border)] dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                <Plus size={18} /> New Chat
+              </button>
+            </div>
+            <div className="mt-auto p-4 border-t border-[var(--sidebar-border)]">
+              <button onClick={() => { setShowAuth(true); if(window.innerWidth < 768) setIsSidebarOpen(false); }} className="flex items-center gap-2 text-sm dark:text-white w-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                <User size={18} /> Sign In
+              </button>
+            </div>
+          </motion.aside>
         )}
       </AnimatePresence>
 
-      {/* --- HEADER (Fixed Top) --- */}
-      <header className="niti-header">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setIsSidebarOpen(true)} className="p-1 md:hidden">
-            <Menu size={24} />
-          </button>
-          <div>
-            <h1 className="font-bold text-lg leading-tight">Niti.ai</h1>
-            <p className="text-[10px] opacity-80">GOVT SCHEME ASSISTANT</p>
+      {/* --- MAIN CONTENT --- */}
+      <main className="niti-main">
+        {/* Header */}
+        <header className="niti-header">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setIsSidebarOpen(true)} className="p-1 md:hidden">
+              <Menu size={24} />
+            </button>
+            <div>
+              <h1 className="font-bold text-lg leading-tight">Niti.ai</h1>
+              <p className="text-[10px] opacity-80">GOVT SCHEME ASSISTANT</p>
+            </div>
           </div>
-        </div>
-        <button onClick={() => setIsDark(!isDark)} className="p-2 bg-white/10 rounded-full">
-          {isDark ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-      </header>
+          <button onClick={() => setIsDark(!isDark)} className="p-2 bg-white/10 rounded-full hover:bg-white/20">
+            {isDark ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+        </header>
 
-      {/* --- CHAT AREA (Scrollable Middle) --- */}
-      <div className="niti-chat-area">
-        {messages.map((msg) => (
-          <div key={msg.id}>
-            {msg.role === "user" ? (
-              <UserMessage content={msg.content} />
-            ) : (
-              <BotMessage content={msg.content} isDark={isDark} />
+        {/* Chat Area */}
+        <div className="niti-chat-area">
+          {messages.map((msg) => (
+            <div key={msg.id} className="w-full">
+              {msg.role === "user" ? (
+                <UserMessage content={msg.content} />
+              ) : (
+                <BotMessage content={msg.content} isDark={isDark} />
+              )}
+            </div>
+          ))}
+          {isLoading && <BotMessage content="" isTyping={true} isDark={isDark} />}
+          <div ref={messagesEndRef} className="h-1" />
+        </div>
+
+        {/* Input Area */}
+        <div className="niti-input-area">
+          <div className="niti-input-box">
+            <input 
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              onFocus={scrollToBottom}
+              placeholder="Ask about schemes..."
+              className="flex-1 bg-transparent border-none outline-none text-sm md:text-base dark:text-white dark:placeholder:text-gray-500 text-slate-900"
+            />
+            
+            <button onClick={startListening} className="p-2 bg-orange-500 rounded-full text-white hover:bg-orange-600 transition shadow-lg shrink-0">
+              <Mic size={20} />
+            </button>
+
+            {input.trim() && (
+              <button onClick={handleSend} className="p-2 bg-blue-600 rounded-full text-white hover:bg-blue-700 transition shrink-0">
+                <Send size={18} />
+              </button>
             )}
           </div>
-        ))}
-        {isLoading && <BotMessage content="" isTyping={true} isDark={isDark} />}
-        {/* Invisible div to scroll to */}
-        <div ref={messagesEndRef} className="h-1" />
-      </div>
-
-      {/* --- INPUT AREA (Fixed Bottom) --- */}
-      <div className="niti-input-area">
-        <div className="niti-input-box">
-          <input 
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            onFocus={scrollToBottom} // Keyboard open hone par scroll karo
-            placeholder="Ask about schemes..."
-            className="flex-1 bg-transparent border-none outline-none text-sm md:text-base dark:text-white dark:placeholder:text-gray-500 text-slate-900"
-          />
-          
-          <button onClick={startListening} className="p-2 bg-orange-500 rounded-full text-white hover:bg-orange-600 transition shadow-lg shrink-0">
-            <Mic size={20} />
-          </button>
-
-          {input.trim() && (
-            <button onClick={handleSend} className="p-2 bg-blue-600 rounded-full text-white hover:bg-blue-700 transition shrink-0">
-              <Send size={18} />
-            </button>
-          )}
         </div>
-      </div>
+      </main>
 
     </div>
   );
