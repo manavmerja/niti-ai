@@ -8,7 +8,6 @@ Thumbs.db
 # =========================
 # SECRETS (Back & Front)
 # =========================
-# Ye sabse zaruri hai - passwords chupaane ke liye
 .env
 .env.local
 .env.development.local
