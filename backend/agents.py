@@ -1,48 +1,56 @@
 import os
 from crewai import Agent, Task, Crew, Process
+from crewai_tools import SerperDevTool
 
+# --- 1. SETUP TOOLS ---
+search_tool = SerperDevTool()
 
 class NitiAgents:
     def __init__(self):
-        # 🧠 SMART MODEL SELECTOR (String Based)
-        # Hum check karenge ki kaunsi key available hai aur waisa model name set karenge
-        
+        # Model Selection Logic (Wahi purana smart logic)
         if "GROQ_API_KEY" in os.environ:
-            print("🔵 Selected Model: Groq (Llama 3.3)")
-            # CrewAI ko batane ke liye ki Groq use karna hai, hum 'groq/' prefix lagate hain
+            print("🔵 Using Groq (Llama 3.3)")
             self.model_name = "groq/llama-3.3-70b-versatile"
-        
         elif "GOOGLE_API_KEY" in os.environ:
-            print("🟡 Selected Model: Google Gemini")
-            # Gemini ke liye 'gemini/' prefix
+            print("🟡 Using Gemini")
             self.model_name = "gemini/gemini-1.5-flash"
-        
         else:
-            raise ValueError("❌ Koi API Key nahi mili! .env file check karo.")
+            raise ValueError("❌ API Keys missing in .env")
 
-    def education_expert(self):
+    # --- AGENT 1: THE RESEARCHER (Internet Surfer) ---
+    def government_researcher(self):
         return Agent(
-            role='Education Policy Expert',
-            goal='Find scholarship and loan schemes for students',
-            backstory='You are a government counselor dedicated to helping students fund their education.',
+            role='Senior Government Policy Researcher',
+            goal='Find the most accurate, latest, and official schemes for: {topic}',
+            backstory="""You are an expert researcher for the Government of India. 
+            Your job is to search the internet and find EXACT and REAL government schemes.
+            You do NOT invent information. You only report what you find on official websites (.gov.in).
+            Always look for: Eligibility, Benefits, and Official Application Links.""",
             verbose=True,
-            llm=self.model_name  # <-- Ab hum String pass kar rahe hain
-        )
-
-    def agriculture_expert(self):
-        return Agent(
-            role='Kisan Mitra (Farmer Advisor)',
-            goal='Find subsidies, insurance, and loan schemes for farmers',
-            backstory='You represent the Ministry of Agriculture and help farmers understand benefits.',
-            verbose=True,
+            memory=True,
+            tools=[search_tool], # <-- Internet Power
             llm=self.model_name
         )
 
-    def coordinator(self):
+    # --- AGENT 2: THE WRITER (Formatter & Translator) ---
+    def content_writer(self):
         return Agent(
-            role='Niti.ai Guide',
-            goal='Synthesize information and reply in simple Hinglish',
-            backstory='You are a friendly assistant who explains complex policies in simple language.',
+            role='Public Information Officer (Sewak)',
+            goal='Format the research into a clean, simple answer in the User\'s Language.',
+            backstory="""You are a helpful government assistant 'Niti.ai'.
+            Your rule is: "Jo user ne manga, wahi pehle do".
+            
+            STRICT RULES FOR OUTPUT:
+            1. Language: If query is Hindi -> Reply in Hindi. If English -> Reply in English.
+            2. Formatting: Use **Bold** for Scheme Names. Use Bullet points for benefits.
+            3. Links: You MUST provide the direct 'Official Website Link' for every scheme.
+            4. Length: Keep it short (max 150 words per scheme).
+            5. Structure:
+               - Scheme Name (Bold)
+               - One line summary
+               - Key Benefits (Bullets)
+               - Official Link: [URL]
+            """,
             verbose=True,
             llm=self.model_name
         )
@@ -50,35 +58,41 @@ class NitiAgents:
 def get_scheme_plan(user_input):
     agents = NitiAgents()
     
-    # 1. Define Agents
-    edu = agents.education_expert()
-    agri = agents.agriculture_expert()
-    coord = agents.coordinator()
+    # Initialize Agents
+    researcher = agents.government_researcher()
+    writer = agents.content_writer()
 
-    # 2. Define Tasks
+    # --- TASK 1: SEARCH ---
     task1 = Task(
-        description=f"Analyze input: '{user_input}'. If it relates to students, list 2 real Indian Govt schemes with benefits.",
-        agent=edu,
-        expected_output="List of education schemes"
+        description=f"""
+        Search for the latest Indian Government schemes related to: '{user_input}'.
+        Focus on finding official eligibility criteria, benefits, and application links.
+        Verify that the schemes are currently active in 2024-25.
+        """,
+        agent=researcher,
+        expected_output="A list of real schemes with details and links."
     )
-    
+
+    # --- TASK 2: FORMAT & REPLY ---
     task2 = Task(
-        description=f"Analyze input: '{user_input}'. If it relates to farmers, list 2 real Indian Govt schemes with benefits.",
-        agent=agri,
-        expected_output="List of agriculture schemes"
+        description=f"""
+        Using the research, write a final reply to the user.
+        The user asked: '{user_input}'.
+        
+        If the user asked about 'Farmers', put Farmer schemes FIRST.
+        If the user asked about 'Students', put Student schemes FIRST.
+        
+        End the message with a polite closing: "Kya aap kisi aur scheme ke baare mein jaanna chahenge?"
+        """,
+        agent=writer,
+        context=[task1], # <-- Pichle task ka data lega
+        expected_output="A well-formatted, polite response in the user's language."
     )
 
-    task3 = Task(
-        description="Combine findings. Write a helpful response in Hinglish (Mix of Hindi & English). Be polite.",
-        agent=coord,
-        context=[task1, task2],
-        expected_output="Final Hinglish response"
-    )
-
-    # 3. Create Crew
+    # --- CREW EXECUTION ---
     crew = Crew(
-        agents=[edu, agri, coord],
-        tasks=[task1, task2, task3],
+        agents=[researcher, writer],
+        tasks=[task1, task2],
         verbose=True,
         process=Process.sequential
     )
