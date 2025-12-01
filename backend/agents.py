@@ -1,13 +1,14 @@
 import os
 from crewai import Agent, Task, Crew, Process
-from crewai_tools import SerperDevTool
+# Google (Serper) ko hataya, DuckDuckGo lagaya
+from langchain_community.tools import DuckDuckGoSearchRun
 
-# --- 1. SETUP TOOLS ---
-search_tool = SerperDevTool()
+# --- 1. SETUP TOOLS (FREE & UNLIMITED) ---
+search_tool = DuckDuckGoSearchRun()
 
 class NitiAgents:
     def __init__(self):
-        # Model Selection Logic (Wahi purana smart logic)
+        # Model Selection Logic
         if "GROQ_API_KEY" in os.environ:
             print("🔵 Using Groq (Llama 3.3)")
             self.model_name = "groq/llama-3.3-70b-versatile"
@@ -17,39 +18,31 @@ class NitiAgents:
         else:
             raise ValueError("❌ API Keys missing in .env")
 
-    # --- AGENT 1: THE RESEARCHER (Internet Surfer) ---
+    # --- AGENT 1: THE RESEARCHER ---
     def government_researcher(self):
         return Agent(
             role='Senior Government Policy Researcher',
-            goal='Find the most accurate, latest, and official schemes for: {topic}',
-            backstory="""You are an expert researcher for the Government of India. 
-            Your job is to search the internet and find EXACT and REAL government schemes.
-            You do NOT invent information. You only report what you find on official websites (.gov.in).
-            Always look for: Eligibility, Benefits, and Official Application Links.""",
+            goal='Find the latest official Indian Government schemes for: {topic}',
+            backstory="""You are an expert researcher. Your job is to search the internet 
+            and find EXACT and REAL government schemes.
+            Always look for: Eligibility, Benefits, and Application Links.""",
             verbose=True,
             memory=True,
-            tools=[search_tool], # <-- Internet Power
+            tools=[search_tool], # <-- Ab ye DuckDuckGo use karega
             llm=self.model_name
         )
 
-    # --- AGENT 2: THE WRITER (Formatter & Translator) ---
+    # --- AGENT 2: THE WRITER ---
     def content_writer(self):
         return Agent(
-            role='Public Information Officer (Sewak)',
-            goal='Format the research into a clean, simple answer in the User\'s Language.',
-            backstory="""You are a helpful government assistant 'Niti.ai'.
-            Your rule is: "Jo user ne manga, wahi pehle do".
-            
-            STRICT RULES FOR OUTPUT:
+            role='Public Information Officer',
+            goal='Format the research into a clean answer in the User\'s Language.',
+            backstory="""You are 'Niti.ai'.
+            STRICT RULES:
             1. Language: If query is Hindi -> Reply in Hindi. If English -> Reply in English.
-            2. Formatting: Use **Bold** for Scheme Names. Use Bullet points for benefits.
-            3. Links: You MUST provide the direct 'Official Website Link' for every scheme.
-            4. Length: Keep it short (max 150 words per scheme).
-            5. Structure:
-               - Scheme Name (Bold)
-               - One line summary
-               - Key Benefits (Bullets)
-               - Official Link: [URL]
+            2. Formatting: Use **Bold** for Names. Use Bullet points.
+            3. Links: Provide website links if found.
+            4. Length: Keep it simple and helpful.
             """,
             verbose=True,
             llm=self.model_name
@@ -57,39 +50,22 @@ class NitiAgents:
 
 def get_scheme_plan(user_input):
     agents = NitiAgents()
-    
-    # Initialize Agents
     researcher = agents.government_researcher()
     writer = agents.content_writer()
 
-    # --- TASK 1: SEARCH ---
     task1 = Task(
-        description=f"""
-        Search for the latest Indian Government schemes related to: '{user_input}'.
-        Focus on finding official eligibility criteria, benefits, and application links.
-        Verify that the schemes are currently active in 2024-25.
-        """,
+        description=f"Search for latest Indian Govt schemes related to: '{user_input}'. Verify they are active.",
         agent=researcher,
-        expected_output="A list of real schemes with details and links."
+        expected_output="List of schemes with details."
     )
 
-    # --- TASK 2: FORMAT & REPLY ---
     task2 = Task(
-        description=f"""
-        Using the research, write a final reply to the user.
-        The user asked: '{user_input}'.
-        
-        If the user asked about 'Farmers', put Farmer schemes FIRST.
-        If the user asked about 'Students', put Student schemes FIRST.
-        
-        End the message with a polite closing: "Kya aap kisi aur scheme ke baare mein jaanna chahenge?"
-        """,
+        description=f"Write a final reply for '{user_input}'. Use Bold and Bullets. Reply in user's language.",
         agent=writer,
-        context=[task1], # <-- Pichle task ka data lega
-        expected_output="A well-formatted, polite response in the user's language."
+        context=[task1],
+        expected_output="Final formatted response."
     )
 
-    # --- CREW EXECUTION ---
     crew = Crew(
         agents=[researcher, writer],
         tasks=[task1, task2],
