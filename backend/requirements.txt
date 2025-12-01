@@ -6,4 +6,4 @@ langchain_google_genai
 python-dotenv
 litellm
 langchain-community
-duckduckgo-search
+duckduckgo-search==6.3.10
