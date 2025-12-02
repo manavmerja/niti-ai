@@ -5,6 +5,4 @@ langchain_groq
 langchain_google_genai
 python-dotenv
 litellm
-langchain-community
-duckduckgo-search==6.3.7
-ddgs
+crewai-tools
