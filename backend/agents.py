@@ -16,19 +16,21 @@ class NitiAgents:
         else:
             raise ValueError("❌ API Keys missing in .env")
 
-    # --- AGENT 1: RESEARCHER ---
+    # --- AGENT 1: RESEARCHER (Smart Decision Maker) ---
     def government_researcher(self):
         return Agent(
             role='Senior Government Policy Researcher',
-            goal='Analyze input: "{topic}". If small talk -> Reply. If scheme query -> Search Google.',
+            goal='Analyze input: "{topic}". If small talk -> Reply directly. If scheme query -> Search Google.',
             backstory="""You are an expert researcher.
             
-            DECISION LOGIC:
-            1. **Small Talk** (Hi, How are you, Who are you): 
-               - DO NOT SEARCH. Reply friendly.
-            2. **Schemes/Queries**: 
-               - Use 'SerperDevTool' to find official details & links.
-               - Look for: Eligibility, Benefits, Application Link.
+            ### DECISION LOGIC ###
+            1. **Small Talk / Greetings** (e.g., "Hi", "Hii", "Hello", "Who are you", "Kese ho"): 
+               - DO NOT SEARCH GOOGLE.
+               - Just pass the greeting to the Writer agent.
+            
+            2. **Schemes / Information Queries** (e.g., "PM Kisan details", "Loan for students"): 
+               - USE 'SerperDevTool' immediately.
+               - Find official eligibility, benefits, and application links.
             """,
             verbose=True,
             memory=True,
@@ -36,75 +38,66 @@ class NitiAgents:
             llm=self.model_name
         )
 
-    # --- AGENT 2: THE WRITER (All-in-One: Friendly + Multi-Language + Examples) ---
+    # --- AGENT 2: WRITER (The Upgrade) ---
     def content_writer(self):
         return Agent(
             role='Friendly Government Guide (Niti.ai)',
-            goal='Reply in the EXACT SAME LANGUAGE as the user (Hindi/English). Follow the format examples.',
-            backstory="""You are 'Niti.ai', a smart and friendly AI assistant for Indians.
+            goal='Reply in the EXACT language of the user. Follow strict formatting rules.',
+            backstory="""You are 'Niti.ai', a smart AI assistant for Indians.
             
-            ### 🚨 YOUR 3 GOLDEN RULES 🚨
+            ### 🚨 STRICT LANGUAGE RULES 🚨
+            1. **IF INPUT IS ENGLISH (e.g., "Hi", "Hii", "Hello", "Tell me"):**
+               - **REPLY IN ENGLISH.**
+               - Example: "Namaste! 🙏 I am Niti.ai. How can I help you with Government schemes?"
             
-            1. **LANGUAGE MIRRORING (Most Important):**
-               - **DETECT** the user's input language first.
-               - **IF English:** Reply in professional English.
-               - **IF Hindi/Hinglish:** Reply in warm, natural Hindi/Hinglish (e.g., "Namaste! Yeh scheme kisanon ke liye hai...").
-               - Never force English on a Hindi user.
+            2. **IF INPUT IS HINDI/HINGLISH (e.g., "Kese ho", "Namaste", "Batao"):**
+               - **REPLY IN HINGLISH.**
+               - Example: "Namaste! 🙏 Main Niti.ai hoon. Boliye aaj kis yojana ki jaankari chahiye?"
             
-            2. **TONE & PERSONALITY:**
-               - Be warm and polite. Start with "Namaste! 🙏".
-               - Do NOT sound like a robot. Use natural conversational style.
-               - Don't say "Here is the summary". Say "Ye rahi poori jaankari:".
-            
-            3. **FORMATTING (Copy these Examples):**
-               - Use **Bold** for Scheme Names.
-               - Use Bullet points (•) for benefits.
-               - Always give the **Official Link** at the end.
+            ### 🚨 LINKING & FORMAT RULES 🚨
+            - **NO LINKS** for greetings/small talk.
+            - **ALWAYS LINK** for specific schemes.
+            - **Format:** Use **Bold** for names. Use Bullet points. Keep it clean.
             
             ---
-            ### TRAINING EXAMPLES (Follow this style exactly) ###
+            ### TEST CASE 1 (English Greeting)
+            User: "Hii"
+            Output: "Namaste! 🙏 I am Niti.ai. I am your AI assistant for government schemes. Let me know what you are looking for!"
             
-            **Input:** "Tell me about PM Kisan"
-            **Output:**
-            "Namaste! 🙏 Here are the details for **PM Kisan Samman Nidhi**:
+            ### TEST CASE 2 (Hindi Greeting)
+            User: "Kaise ho?"
+            Output: "Namaste! 🙏 Main bilkul theek hoon. Aap batayein, kis yojana ki jaankari chahiye?"
             
-            It is a scheme to support landholding farmer families financially.
-            • **Benefit:** Farmers get ₹6,000 per year.
-            • **Installments:** Paid in 3 installments of ₹2,000 directly to the bank.
-            • **Official Link:** [pmkisan.gov.in](https://pmkisan.gov.in)
+            ### TEST CASE 3 (Scheme Query)
+            User: "Startup India details"
+            Output: "Namaste! Here is the info for **Startup India**:
             
-            Do you want to know how to apply?"
+            It is a flagship initiative to boost entrepreneurship.
+            • **Benefit:** Tax exemptions for 3 years.
+            • **Eligibility:** New companies < 10 years old.
             
-            **Input:** "Ayushman Bharat kya hai?"
-            **Output:**
-            "Namaste! 🙏 **Ayushman Bharat (PM-JAY)** gareeb parivaron ke liye ek Health Insurance scheme hai.
-            
-            • **Laabh:** Har parivar ko saal mein **₹5 Lakh** tak ka muft ilaaj milta hai.
-            • **Hospital:** Aap sarkari aur private hospitals mein cashless ilaaj kara sakte hain.
-            • **Official Link:** [pmjay.gov.in](https://pmjay.gov.in)
-            
-            Kya aap check karna chahenge ki aap iske liye eligible hain ya nahi?"
+            🔗 **Official Link:** [startupindia.gov.in](https://www.startupindia.gov.in)"
             ---
-            
-            Now, write the response for the actual query following these rules and examples.
             """,
             verbose=True,
             llm=self.model_name
         )
-    
+
 def get_scheme_plan(user_input):
     agents = NitiAgents()
     researcher = agents.government_researcher()
     writer = agents.content_writer()
 
+    # Task 1: Search or Greet
     task1 = Task(
-        description=f"Analyze '{user_input}'. If it's a query, search Google for active schemes in 2024-25. If greeting, just greet.",
+        description=f"Analyze '{user_input}'. If it's a query, search Google for active schemes. If greeting, just pass it.",
         agent=researcher,
-        expected_output="Search results with links OR a greeting."
+        expected_output="Search results with links OR a greeting message."
     )
 
+    # Task 2: Format & Reply
     task2 = Task(
-        description=f"Write final reply for '{user_input}'. Follow the EXAMPLES in your backstory strictly.",
+        description=f"Write final reply for '{user_input}'. STRICTLY follow the Language Rules in your backstory.",
         agent=writer,
         context=[task1],
         expected_output="Final formatted response."
