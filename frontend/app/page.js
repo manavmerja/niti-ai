@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Plus, Sun, Moon, Send, Mic, User, ShieldCheck, Mail } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient'; // <-- Supabase Import
+import { Menu, X, Plus, Sun, Moon, Send, Mic, User, ShieldCheck, Mail, LogOut, Trash2 } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 // --- COMPONENTS ---
 
@@ -36,22 +36,17 @@ function UserMessage({ content }) {
   );
 }
 
-// --- AUTH MODAL (FIXED) ---
 function AuthModal({ isOpen, onClose }) {
-  
-  // ✅ FIX: Function ko yahan upar define kiya hai
   const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-        },
+        options: { redirectTo: window.location.origin },
       });
       if (error) throw error;
     } catch (error) {
       console.error("Login Error:", error.message);
-      alert("Login failed! Check console for details.");
+      alert("Login failed!");
     }
   };
 
@@ -60,23 +55,14 @@ function AuthModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
-        
         <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
           <X size={20} className="text-gray-500" />
         </button>
-        
         <h2 className="text-xl font-bold text-center mb-2 dark:text-white">Welcome</h2>
-        <p className="text-center text-sm text-gray-500 mb-6">Sign in to Niti.ai</p>
-        
-        {/* Google Login Button */}
-        <button 
-          onClick={handleGoogleLogin} 
-          className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium mb-3 flex items-center justify-center gap-2 hover:opacity-90 transition"
-        >
-          <Mail size={18} />
-          Sign in with Google
+        <p className="text-center text-sm text-gray-500 mb-6">Sign in to save your chat history.</p>
+        <button onClick={handleGoogleLogin} className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium mb-3 flex items-center justify-center gap-2 hover:opacity-90 transition">
+          <Mail size={18} /> Sign in with Google
         </button>
-
       </div>
     </div>
   );
@@ -89,25 +75,87 @@ export default function NitiPage() {
   const [showAuth, setShowAuth] = useState(false);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState([
-    { id: 1, role: "assistant", content: "Namaste! 🙏 I am Niti.ai. Ask me anything about Indian Government schemes." }
-  ]);
+  const [user, setUser] = useState(null);
+  
+  const initialMsg = { id: 1, role: "assistant", content: "Namaste! 🙏 I am Niti.ai. Ask me anything about Indian Government schemes." };
+  const [messages, setMessages] = useState([initialMsg]);
   
   const messagesEndRef = useRef(null);
 
+  // --- SCROLL FUNCTION (YE MISSING THA) ---
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // 1. CHECK LOGIN & LOAD HISTORY
   useEffect(() => {
     if (window.innerWidth > 768) setIsSidebarOpen(true);
+
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        fetchHistory(session.user.id);
+      }
+    };
+    checkUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        fetchHistory(session.user.id);
+        setShowAuth(false);
+      } else {
+        setUser(null);
+        setMessages([initialMsg]);
+      }
+    });
+
+    return () => authListener.subscription.unsubscribe();
   }, []);
+
+  // 2. FETCH HISTORY
+  const fetchHistory = async (userId) => {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+
+    if (error) console.error("History Error:", error);
+    else if (data && data.length > 0) {
+      setMessages(data.map(msg => ({ 
+        id: msg.id, 
+        role: msg.role, 
+        content: msg.content 
+      })));
+      setTimeout(scrollToBottom, 500); // Load hone ke baad scroll karo
+    }
+  };
+
+  // 3. SAVE MESSAGE
+  const saveToDb = async (role, content) => {
+    if (!user) return;
+    await supabase.from('messages').insert([
+      { role, content, user_id: user.id }
+    ]);
+  };
+
+  // 4. LOGOUT
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setMessages([initialMsg]);
+  };
 
   useEffect(() => {
     if (isDark) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
   }, [isDark]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }
-  useEffect(() => { scrollToBottom() }, [messages, isLoading]);
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
 
   const startListening = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -127,6 +175,8 @@ export default function NitiPage() {
     setInput("");
     
     setMessages(prev => [...prev, { id: Date.now(), role: "user", content: userText }]);
+    saveToDb("user", userText);
+    
     setIsLoading(true);
 
     try {
@@ -136,13 +186,20 @@ export default function NitiPage() {
         body: JSON.stringify({ text: userText }),
       });
       const data = await res.json();
-      setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: data.response || "No response." }]);
+      
+      const botResponse = data.response || "No response.";
+      
+      setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: botResponse }]);
+      saveToDb("assistant", botResponse);
+
     } catch (error) {
       setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: "⚠️ Network Error." }]);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const bgClass = isDark ? "bg-[#212121] text-slate-100 dot-grid-dark" : "bg-[#F8FAFC] text-slate-900 dot-grid-light";
 
   return (
     <div className={`niti-layout ${isDark ? 'dark' : ''}`}>
@@ -160,19 +217,41 @@ export default function NitiPage() {
             initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ duration: 0.2 }}
             className={`niti-sidebar absolute md:relative shadow-2xl md:shadow-none`}
           >
-            <div className="p-4 flex items-center justify-between border-b border-[var(--sidebar-border)]">
-              <span className="font-bold text-xl dark:text-white">Niti.ai</span>
-              <button onClick={() => setIsSidebarOpen(false)} className="md:hidden"><X size={24} className="text-gray-500" /></button>
+            <div className="p-4 flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-gradient-to-br from-orange-500 via-white to-green-500 p-[1px]">
+                 <div className={`w-full h-full rounded flex items-center justify-center font-bold ${isDark ? 'bg-[#1a1a1a]' : 'bg-white'}`}>N</div>
+              </div>
+              <span className="font-bold text-lg">Niti.ai</span>
+              <button onClick={() => setIsSidebarOpen(false)} className="md:hidden ml-auto"><X size={20} className="text-gray-500" /></button>
             </div>
-            <div className="p-4">
-              <button onClick={() => setMessages([])} className="w-full flex items-center gap-2 p-3 rounded-lg border border-[var(--sidebar-border)] dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+
+            <div className="px-3 mb-4">
+              <button onClick={() => setMessages([initialMsg])} className="w-full flex items-center gap-2 p-3 rounded-lg border border-[var(--sidebar-border)] dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                 <Plus size={18} /> New Chat
               </button>
             </div>
+
             <div className="mt-auto p-4 border-t border-[var(--sidebar-border)]">
-              <button onClick={() => { setShowAuth(true); if(window.innerWidth < 768) setIsSidebarOpen(false); }} className="flex items-center gap-2 text-sm dark:text-white w-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-                <User size={18} /> Sign In
-              </button>
+              {user ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold shrink-0">
+                      {user.email[0].toUpperCase()}
+                    </div>
+                    <div className="text-xs truncate dark:text-gray-300">
+                      <p className="font-medium truncate">{user.user_metadata.full_name || "User"}</p>
+                      <p className="opacity-60 truncate">{user.email}</p>
+                    </div>
+                  </div>
+                  <button onClick={handleLogout} className="p-2 hover:bg-red-500/10 hover:text-red-500 rounded-full transition" title="Logout">
+                    <LogOut size={18} />
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => { setShowAuth(true); if(window.innerWidth < 768) setIsSidebarOpen(false); }} className="flex items-center gap-2 text-sm dark:text-white w-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                  <User size={18} /> Sign In
+                </button>
+              )}
             </div>
           </motion.aside>
         )}
