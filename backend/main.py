@@ -1,21 +1,40 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware # <-- Ye line permission ke liye hai
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from agents import get_scheme_plan
 import os
-from dotenv import load_dotenv
+import asyncio
+import httpx # <-- New Import (Make sure to install this if needed, but requests works too)
+from contextlib import asynccontextmanager
 
-load_dotenv()
+# --- SELF PING MECHANISM (Keep Alive) ---
+async def keep_alive():
+    """Server ko sone se rokne ke liye har 10 minute me khud ko ping karega"""
+    url = "https://niti-backend.onrender.com/" # <-- YAHAN APNA RENDER URL DALO
+    while True:
+        try:
+            print(f"🔄 Pinging myself to stay awake: {url}")
+            async with httpx.AsyncClient() as client:
+                await client.get(url)
+        except Exception as e:
+            print(f"⚠️ Ping failed: {e}")
+        
+        await asyncio.sleep(600) # 10 Minutes wait
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup par background task shuru karo
+    asyncio.create_task(keep_alive())
+    yield
 
-# --- CORS SETTINGS (Permission Fix) ---
-# Ye code frontend ko allow karega
+app = FastAPI(lifespan=lifespan)
+
+# --- CORS SETTINGS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Sabko allow karo (localhost:3000 included)
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"], # GET, POST, OPTIONS sab allow karo
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -30,9 +49,7 @@ def home():
 def chat(query: UserQuery):
     print(f"📩 Input: {query.text}")
     try:
-        # Agents ko call karo
         response = get_scheme_plan(query.text)
-        # Response ko string me convert karke bhejo
         return {"response": str(response)} 
     except Exception as e:
         return {"error": str(e)}
