@@ -25,15 +25,29 @@ export default function NitiPage() {
   
   const messagesEndRef = useRef(null);
 
-  // --- 1. CHECK LOGIN & PROFILE ---
+ // --- 1. CHECK LOGIN & PROFILE (UPDATED) ---
   useEffect(() => {
     // Desktop check
     if (window.innerWidth > 768) setIsSidebarOpen(true);
 
-    const checkUser = async () => {
+    const checkUserAndProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      
       if (session?.user) {
         setUser(session.user);
+
+        // 🔥 FIX: FORCE CREATE PROFILE (Agar DB me nahi hai to bana do)
+        const { error: profileError } = await supabase.from('profiles').upsert({
+            id: session.user.id,
+            email: session.user.email,
+            full_name: session.user.user_metadata.full_name || "User",
+            avatar_url: session.user.user_metadata.avatar_url,
+            updated_at: new Date()
+        }, { onConflict: 'id' }); // Agar pehle se hai to update karo, nahi to insert
+
+        if (profileError) console.error("Profile Create Error:", profileError);
+
+        // Load History
         fetchHistory(session.user.id);
         
         // CHECK ONBOARDING STATUS
@@ -49,18 +63,14 @@ export default function NitiPage() {
         }
       }
     };
-    checkUser();
+
+    checkUserAndProfile();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
-        setUser(session.user);
-        fetchHistory(session.user.id);
+        // Login hote hi dubara check karo
+        checkUserAndProfile();
         setShowAuth(false);
-        // Login ke waqt bhi check karo
-        supabase.from('profiles').select('occupation').eq('id', session.user.id).single()
-          .then(({ data }) => {
-            if (!data?.occupation) setShowOnboarding(true);
-          });
       } else {
         setUser(null);
         setMessages([initialMsg]);
@@ -69,7 +79,6 @@ export default function NitiPage() {
 
     return () => authListener.subscription.unsubscribe();
   }, []);
-
   // --- 2. FETCH HISTORY ---
   const fetchHistory = async (userId) => {
     const { data, error } = await supabase
