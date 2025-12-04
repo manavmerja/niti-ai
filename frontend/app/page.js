@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Plus, Sun, Moon, Send, Mic, User, ShieldCheck, Mail } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient'; // <-- Supabase Import
 
 // --- COMPONENTS ---
 
@@ -12,9 +13,7 @@ function BotMessage({ content, isTyping, isDark }) {
       <div className={`msg-bubble-bot`}>
         {isTyping ? (
           <div className="flex items-center gap-2 py-1">
-            {/* Thinking Text */}
             <span className="text-sm font-medium opacity-70">Niti is thinking</span>
-            {/* The Black Ball Pulse Animation */}
             <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${isDark ? "bg-white" : "bg-black"}`} />
           </div>
         ) : (
@@ -37,17 +36,47 @@ function UserMessage({ content }) {
   );
 }
 
+// --- AUTH MODAL (FIXED) ---
 function AuthModal({ isOpen, onClose }) {
+  
+  // ✅ FIX: Function ko yahan upar define kiya hai
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error("Login Error:", error.message);
+      alert("Login failed! Check console for details.");
+    }
+  };
+
   if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+        
         <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
           <X size={20} className="text-gray-500" />
         </button>
+        
         <h2 className="text-xl font-bold text-center mb-2 dark:text-white">Welcome</h2>
         <p className="text-center text-sm text-gray-500 mb-6">Sign in to Niti.ai</p>
-        <button className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium mb-3">Sign in with Google</button>
+        
+        {/* Google Login Button */}
+        <button 
+          onClick={handleGoogleLogin} 
+          className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium mb-3 flex items-center justify-center gap-2 hover:opacity-90 transition"
+        >
+          <Mail size={18} />
+          Sign in with Google
+        </button>
+
       </div>
     </div>
   );
@@ -59,31 +88,27 @@ export default function NitiPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false); // Ye State important hai
+  const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState([
     { id: 1, role: "assistant", content: "Namaste! 🙏 I am Niti.ai. Ask me anything about Indian Government schemes." }
   ]);
   
   const messagesEndRef = useRef(null);
 
-  // Desktop check
   useEffect(() => {
     if (window.innerWidth > 768) setIsSidebarOpen(true);
   }, []);
 
-  // Theme Toggle
   useEffect(() => {
     if (isDark) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
   }, [isDark]);
 
-  // Auto Scroll
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }
   useEffect(() => { scrollToBottom() }, [messages, isLoading]);
 
-  // Voice Logic
   const startListening = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -96,15 +121,12 @@ export default function NitiPage() {
     }
   };
 
-  // Send Logic
   const handleSend = async () => {
     if (!input.trim()) return;
     const userText = input;
     setInput("");
     
     setMessages(prev => [...prev, { id: Date.now(), role: "user", content: userText }]);
-    
-    // START LOADING (Thinking Animation aayega)
     setIsLoading(true);
 
     try {
@@ -114,8 +136,6 @@ export default function NitiPage() {
         body: JSON.stringify({ text: userText }),
       });
       const data = await res.json();
-      
-      // STOP LOADING (Response aane par animation hatega)
       setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: data.response || "No response." }]);
     } catch (error) {
       setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: "⚠️ Network Error." }]);
@@ -130,7 +150,6 @@ export default function NitiPage() {
       <div className="niti-bg-pattern"></div>
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
 
-      {/* --- SIDEBAR --- */}
       {isSidebarOpen && (
         <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"/>
       )}
@@ -159,7 +178,6 @@ export default function NitiPage() {
         )}
       </AnimatePresence>
 
-      {/* --- MAIN CONTENT --- */}
       <main className="niti-main">
         <header className="niti-header">
           <div className="flex items-center gap-3">
@@ -174,7 +192,6 @@ export default function NitiPage() {
           </button>
         </header>
 
-        {/* Chat Area */}
         <div className="niti-chat-area">
           {messages.map((msg) => (
             <div key={msg.id} className="w-full">
@@ -185,16 +202,10 @@ export default function NitiPage() {
               )}
             </div>
           ))}
-          
-          {/* YAHAN HAI WO MAGIC CODE - THINKING ANIMATION */}
-          {isLoading && (
-             <BotMessage content="" isTyping={true} isDark={isDark} />
-          )}
-          
+          {isLoading && <BotMessage content="" isTyping={true} isDark={isDark} />}
           <div ref={messagesEndRef} className="h-1" />
         </div>
 
-        {/* Input Area */}
         <div className="niti-input-area">
           <div className="niti-input-box">
             <input 
