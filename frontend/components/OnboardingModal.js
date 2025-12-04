@@ -77,19 +77,23 @@ export default function OnboardingModal({ isOpen, userId, onComplete }) {
             <label className="text-xs font-bold text-slate-500 uppercase px-1">Your State</label>
             <div className="flex items-center gap-2 mt-1 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
               <MapPin size={18} className="text-slate-400" />
+              
+              {/* SELECT BOX FIX */}
               <select 
-                className="bg-transparent w-full outline-none text-slate-800 dark:text-white text-sm"
+                className="bg-transparent w-full outline-none text-slate-800 dark:text-white text-sm cursor-pointer"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
               >
-                <option value="">Select State</option>
-                <option value="Gujarat">Gujarat</option>
-                <option value="Maharashtra">Maharashtra</option>
-                <option value="Delhi">Delhi</option>
-                <option value="Rajasthan">Rajasthan</option>
-                <option value="UP">Uttar Pradesh</option>
-                <option value="Other">Other</option>
+                {/* Options ko hamesha Dark Text do taki wo White Background pe dikhen */}
+                <option value="" className="text-slate-900">Select State</option>
+                <option value="Gujarat" className="text-slate-900">Gujarat</option>
+                <option value="Maharashtra" className="text-slate-900">Maharashtra</option>
+                <option value="Delhi" className="text-slate-900">Delhi</option>
+                <option value="Rajasthan" className="text-slate-900">Rajasthan</option>
+                <option value="UP" className="text-slate-900">Uttar Pradesh</option>
+                <option value="Other" className="text-slate-900">Other</option>
               </select>
+
             </div>
           </div>
 
