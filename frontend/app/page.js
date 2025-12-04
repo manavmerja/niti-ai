@@ -2,77 +2,20 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Plus, Sun, Moon, Send, Mic, User, ShieldCheck, Mail, LogOut, Trash2 } from 'lucide-react';
+import { Menu, X, Plus, Sun, Moon, Send, Mic, User, ShieldCheck, LogOut } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
-// --- COMPONENTS ---
+// --- IMPORT COMPONENTS (Clean Code) ---
+import { BotMessage, UserMessage } from '@/components/ChatMessages';
+import AuthModal from '@/components/AuthModal';
+import OnboardingModal from '@/components/OnboardingModal';
 
-function BotMessage({ content, isTyping, isDark }) {
-  return (
-    <div className="flex gap-2 w-full justify-start">
-      <div className={`msg-bubble-bot`}>
-        {isTyping ? (
-          <div className="flex items-center gap-2 py-1">
-            <span className="text-sm font-medium opacity-70">Niti is thinking</span>
-            <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${isDark ? "bg-white" : "bg-black"}`} />
-          </div>
-        ) : (
-          <div className="text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-             {content}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function UserMessage({ content }) {
-  return (
-    <div className="flex w-full justify-end">
-      <div className="msg-bubble-user text-sm md:text-base">
-        {content}
-      </div>
-    </div>
-  );
-}
-
-function AuthModal({ isOpen, onClose }) {
-  const handleGoogleLogin = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin },
-      });
-      if (error) throw error;
-    } catch (error) {
-      console.error("Login Error:", error.message);
-      alert("Login failed!");
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
-        <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-          <X size={20} className="text-gray-500" />
-        </button>
-        <h2 className="text-xl font-bold text-center mb-2 dark:text-white">Welcome</h2>
-        <p className="text-center text-sm text-gray-500 mb-6">Sign in to save your chat history.</p>
-        <button onClick={handleGoogleLogin} className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium mb-3 flex items-center justify-center gap-2 hover:opacity-90 transition">
-          <Mail size={18} /> Sign in with Google
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// --- MAIN PAGE ---
 export default function NitiPage() {
+  // --- STATE ---
   const [isDark, setIsDark] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false); // New: Onboarding State
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
@@ -82,13 +25,9 @@ export default function NitiPage() {
   
   const messagesEndRef = useRef(null);
 
-  // --- SCROLL FUNCTION (YE MISSING THA) ---
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  // 1. CHECK LOGIN & LOAD HISTORY
+  // --- 1. CHECK LOGIN & PROFILE ---
   useEffect(() => {
+    // Desktop check
     if (window.innerWidth > 768) setIsSidebarOpen(true);
 
     const checkUser = async () => {
@@ -96,6 +35,18 @@ export default function NitiPage() {
       if (session?.user) {
         setUser(session.user);
         fetchHistory(session.user.id);
+        
+        // CHECK ONBOARDING STATUS
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('occupation, state')
+          .eq('id', session.user.id)
+          .single();
+        
+        // Agar profile adhuri hai, to modal dikhao
+        if (!profile?.occupation || !profile?.state) {
+          setShowOnboarding(true);
+        }
       }
     };
     checkUser();
@@ -105,6 +56,11 @@ export default function NitiPage() {
         setUser(session.user);
         fetchHistory(session.user.id);
         setShowAuth(false);
+        // Login ke waqt bhi check karo
+        supabase.from('profiles').select('occupation').eq('id', session.user.id).single()
+          .then(({ data }) => {
+            if (!data?.occupation) setShowOnboarding(true);
+          });
       } else {
         setUser(null);
         setMessages([initialMsg]);
@@ -114,7 +70,7 @@ export default function NitiPage() {
     return () => authListener.subscription.unsubscribe();
   }, []);
 
-  // 2. FETCH HISTORY
+  // --- 2. FETCH HISTORY ---
   const fetchHistory = async (userId) => {
     const { data, error } = await supabase
       .from('messages')
@@ -122,18 +78,17 @@ export default function NitiPage() {
       .eq('user_id', userId)
       .order('created_at', { ascending: true });
 
-    if (error) console.error("History Error:", error);
-    else if (data && data.length > 0) {
+    if (data && data.length > 0) {
       setMessages(data.map(msg => ({ 
         id: msg.id, 
         role: msg.role, 
         content: msg.content 
       })));
-      setTimeout(scrollToBottom, 500); // Load hone ke baad scroll karo
+      setTimeout(scrollToBottom, 500);
     }
   };
 
-  // 3. SAVE MESSAGE
+  // --- 3. SAVE MESSAGE ---
   const saveToDb = async (role, content) => {
     if (!user) return;
     await supabase.from('messages').insert([
@@ -141,11 +96,16 @@ export default function NitiPage() {
     ]);
   };
 
-  // 4. LOGOUT
+  // --- 4. LOGOUT ---
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
     setMessages([initialMsg]);
+  };
+
+  // --- UTILS ---
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -153,9 +113,7 @@ export default function NitiPage() {
     else document.documentElement.classList.remove('dark');
   }, [isDark]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
+  useEffect(() => { scrollToBottom() }, [messages, isLoading]);
 
   const startListening = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -169,6 +127,7 @@ export default function NitiPage() {
     }
   };
 
+  // --- SEND LOGIC ---
   const handleSend = async () => {
     if (!input.trim()) return;
     const userText = input;
@@ -176,7 +135,6 @@ export default function NitiPage() {
     
     setMessages(prev => [...prev, { id: Date.now(), role: "user", content: userText }]);
     saveToDb("user", userText);
-    
     setIsLoading(true);
 
     try {
@@ -186,7 +144,6 @@ export default function NitiPage() {
         body: JSON.stringify({ text: userText }),
       });
       const data = await res.json();
-      
       const botResponse = data.response || "No response.";
       
       setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: botResponse }]);
@@ -199,18 +156,21 @@ export default function NitiPage() {
     }
   };
 
-  const bgClass = isDark ? "bg-[#212121] text-slate-100 dot-grid-dark" : "bg-[#F8FAFC] text-slate-900 dot-grid-light";
-
+  // --- RENDER ---
   return (
     <div className={`niti-layout ${isDark ? 'dark' : ''}`}>
-      
       <div className="niti-bg-pattern"></div>
+      
+      {/* MODALS */}
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
+      <OnboardingModal isOpen={showOnboarding} userId={user?.id} onComplete={() => setShowOnboarding(false)} />
 
+      {/* SIDEBAR OVERLAY (MOBILE) */}
       {isSidebarOpen && (
         <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"/>
       )}
 
+      {/* SIDEBAR */}
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.aside
@@ -236,10 +196,10 @@ export default function NitiPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 overflow-hidden">
                     <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold shrink-0">
-                      {user.email[0].toUpperCase()}
+                      {user.email?.[0].toUpperCase()}
                     </div>
                     <div className="text-xs truncate dark:text-gray-300">
-                      <p className="font-medium truncate">{user.user_metadata.full_name || "User"}</p>
+                      <p className="font-medium truncate">User</p>
                       <p className="opacity-60 truncate">{user.email}</p>
                     </div>
                   </div>
@@ -257,6 +217,7 @@ export default function NitiPage() {
         )}
       </AnimatePresence>
 
+      {/* MAIN CONTENT */}
       <main className="niti-main">
         <header className="niti-header">
           <div className="flex items-center gap-3">
@@ -277,7 +238,7 @@ export default function NitiPage() {
               {msg.role === "user" ? (
                 <UserMessage content={msg.content} />
               ) : (
-                <BotMessage content={msg.content} isDark={isDark} />
+                <BotMessage content={msg.content} isTyping={false} isDark={isDark} />
               )}
             </div>
           ))}
