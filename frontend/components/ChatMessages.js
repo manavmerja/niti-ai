@@ -50,19 +50,19 @@ function TypewriterText({ content, onComplete }) {
   );
 }
 
-// --- BOT MESSAGE (With Fixed Speaker) ---
+// --- BOT MESSAGE (Fix: Speaker always visible after typing) ---
 export function BotMessage({ content, isTyping, isDark, isNew }) {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isTypingDone, setIsTypingDone] = useState(!isNew); // Agar naya nahi hai, to typing pehle se done hai
 
-  // --- CLEANER FUNCTION (Removes Emojis & formatting) ---
+  // Function to strip Markdown for Speech
   const cleanTextForSpeech = (text) => {
     return text
-      .replace(/\*\*/g, '')       // Remove Bold
-      .replace(/#/g, '')          // Remove Headers
-      // Remove Emojis (Important Fix)
+      .replace(/\*\*/g, '')
+      .replace(/#/g, '')
       .replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Keep link text
-      .replace(/https?:\/\/\S+/g, 'website link'); // Say "website link"
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/https?:\/\/\S+/g, 'website link');
   };
 
   const handleSpeak = () => {
@@ -72,26 +72,69 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
     } else {
       const textToRead = cleanTextForSpeech(content);
       const utterance = new SpeechSynthesisUtterance(textToRead);
-      
       const voices = window.speechSynthesis.getVoices();
-      // Prefer Hindi Google Voice if available, else standard
       const preferredVoice = voices.find(v => v.name.includes('Google हिन्दी')) || voices.find(v => v.lang.includes('IN')) || voices[0];
-      
       if (preferredVoice) utterance.voice = preferredVoice;
-
-      utterance.rate = 1; 
-      utterance.pitch = 1; 
-
+      utterance.rate = 1; utterance.pitch = 1;
       utterance.onend = () => setIsSpeaking(false);
       window.speechSynthesis.speak(utterance);
       setIsSpeaking(true);
     }
   };
 
-  useEffect(() => {
-    return () => window.speechSynthesis.cancel();
-  }, []);
+  useEffect(() => { return () => window.speechSynthesis.cancel(); }, []);
 
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      className="flex gap-3 max-w-3xl w-full group"
+    >
+      <div className="w-1 rounded-full shrink-0 bg-[#FF9933]" />
+      <div className="py-1 w-full">
+        {isTyping ? (
+          <TypingIndicator isDark={isDark} />
+        ) : (
+          <div className="relative">
+            <div className={`text-[15px] ${isDark ? "text-gray-100" : "text-slate-800"}`}>
+               {isNew && !isTypingDone ? (
+                  <TypewriterText content={content} onComplete={() => setIsTypingDone(true)} />
+               ) : (
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]} 
+                    className="prose leading-relaxed break-words"
+                    components={{
+                      a: ({ node, ...props }) => (<a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-bold" />)
+                    }}
+                  >
+                    {content}
+                  </ReactMarkdown>
+               )}
+            </div>
+
+            {/* SPEAKER BUTTON (Shows when typing is done OR message is old) */}
+            {(isTypingDone || !isNew) && (
+              <div className="mt-3 flex opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <button 
+                  onClick={handleSpeak}
+                  className={`px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-semibold border shadow-sm transition-all ${
+                    isSpeaking 
+                      ? 'bg-red-100 text-red-600 border-red-200 opacity-100' // Speaking mode me hamesha dikhega
+                      : isDark 
+                        ? 'bg-[#333] text-gray-300 border-[#444] hover:bg-[#444]'
+                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                  }`}
+                >
+                  {isSpeaking ? (<><StopCircle size={14} className="animate-pulse" /> Stop</>) : (<><Volume2 size={14} /> Listen</>)}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -155,7 +198,6 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
       </div>
     </motion.div>
   );
-}
 
 // --- USER MESSAGE ---
 export function UserMessage({ content }) {
