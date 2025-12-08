@@ -158,3 +158,32 @@ html:not(.dark) .msg-bubble-bot {
   border: 1px solid #e2e8f0;
   border-left: 4px solid #FF9933;
 }
+
+/* --- MARKDOWN STYLES (For Beautiful Chat) --- */
+.prose ul {
+  list-style-type: disc;
+  padding-left: 1.2em;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+.prose li {
+  margin-bottom: 0.2em;
+}
+.prose strong {
+  font-weight: 700;
+  color: inherit;
+}
+.prose a {
+  color: #2563eb; /* Blue Link */
+  text-decoration: underline;
+  font-weight: 500;
+}
+.dark .prose a {
+  color: #60a5fa; /* Light Blue in Dark Mode */
+}
+.prose p {
+  margin-bottom: 0.5em;
+}
+.prose p:last-child {
+  margin-bottom: 0;
+}

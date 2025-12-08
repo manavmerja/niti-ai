@@ -1,6 +1,8 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // --- TYPING INDICATOR (Black Ball Pulse) ---
 export function TypingIndicator({ isDark }) {
@@ -18,26 +20,60 @@ export function TypingIndicator({ isDark }) {
   );
 }
 
+// --- TYPEWRITER COMPONENT (New Magic 🪄) ---
+function TypewriterText({ content, onComplete }) {
+  const [displayedText, setDisplayedText] = useState("");
+  
+  useEffect(() => {
+    let index = 0;
+    const intervalId = setInterval(() => {
+      setDisplayedText((prev) => prev + content.charAt(index));
+      index++;
+      if (index === content.length) {
+        clearInterval(intervalId);
+        if (onComplete) onComplete();
+      }
+    }, 10); // Speed: 10ms per character (Adjust for speed)
+
+    return () => clearInterval(intervalId);
+  }, [content]);
+
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose text-[15px] leading-relaxed break-words">
+      {displayedText}
+    </ReactMarkdown>
+  );
+}
+
 // --- BOT MESSAGE BUBBLE ---
-export function BotMessage({ content, isTyping, isDark }) {
+export function BotMessage({ content, isTyping, isDark, isNew }) {
+  // Logic: Agar message NAYA hai tabhi type karo, purana hai to direct dikhao
+  const shouldAnimate = isNew; 
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       className="flex gap-3 max-w-3xl w-full"
     >
-      {/* Saffron Strip (Vertical Bar) */}
+      {/* Saffron Strip */}
       <div className="w-1 rounded-full shrink-0 bg-[#FF9933]" />
       
       <div className="py-1 w-full">
         {isTyping ? (
           <TypingIndicator isDark={isDark} />
         ) : (
-          <div className={`leading-relaxed whitespace-pre-wrap text-[15px] ${isDark ? "text-gray-100" : "text-slate-800"}`}>
-             {/* Text Rendering logic */}
-             {content.split('\n').map((line, i) => (
-               <p key={i} className="mb-1">{line}</p>
-             ))}
+          <div className={`text-[15px] ${isDark ? "text-gray-100" : "text-slate-800"}`}>
+             
+             {/* TYPEWRITER EFFECT */}
+             {shouldAnimate ? (
+                <TypewriterText content={content} />
+             ) : (
+                <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose leading-relaxed break-words">
+                  {content}
+                </ReactMarkdown>
+             )}
+
           </div>
         )}
       </div>
@@ -54,7 +90,7 @@ export function UserMessage({ content }) {
       className="flex justify-end w-full"
     >
       <div className="bg-blue-600 text-white px-5 py-3 rounded-2xl rounded-br-none max-w-[85%] shadow-md shadow-blue-500/10 text-[15px]">
-        <p className="leading-relaxed">{content}</p>
+        <p className="leading-relaxed whitespace-pre-wrap">{content}</p>
       </div>
     </motion.div>
   );

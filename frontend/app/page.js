@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Plus, Sun, Moon, Send, Mic, User, Mail, LogOut, MessageSquare } from 'lucide-react';
+import { Menu, X, Plus, Sun, Moon, Send, Mic, User, LogOut, MessageSquare } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 // --- IMPORT COMPONENTS ---
@@ -21,9 +21,9 @@ export default function NitiPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
   
-  // SESSION STATE (New Magic 🪄)
-  const [sessions, setSessions] = useState([]); // Sidebar List
-  const [currentSessionId, setCurrentSessionId] = useState(null); // Active Chat ID
+  // SESSION STATE
+  const [sessions, setSessions] = useState([]); 
+  const [currentSessionId, setCurrentSessionId] = useState(null);
 
   const initialMsg = { id: 1, role: "assistant", content: "Namaste! 🙏 I am Niti.ai. Ask me anything about Indian Government schemes." };
   const [messages, setMessages] = useState([initialMsg]);
@@ -31,6 +31,7 @@ export default function NitiPage() {
 
   // --- 1. INITIAL SETUP ---
   useEffect(() => {
+    // Desktop check
     if (window.innerWidth > 768) setIsSidebarOpen(true);
 
     const checkUser = async () => {
@@ -56,9 +57,9 @@ export default function NitiPage() {
   // --- 2. AUTH HANDLERS ---
   const handleLoginSuccess = (userData) => {
     setUser(userData);
-    fetchSessions(userData.id); // Login hote hi purani chats lao
+    fetchSessions(userData.id); 
     
-    // Profile Check
+    // Profile Check for Onboarding
     supabase.from('profiles').select('occupation').eq('id', userData.id).single()
       .then(({ data }) => { if (!data?.occupation) setShowOnboarding(true); });
   };
@@ -74,11 +75,9 @@ export default function NitiPage() {
     await supabase.auth.signOut();
   };
 
-  // --- 3. SESSION MANAGEMENT (Sidebar Logic) ---
-  
-  // A. Fetch All Conversations
+  // --- 3. SESSION MANAGEMENT ---
   const fetchSessions = async (userId) => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('conversations')
       .select('*')
       .eq('user_id', userId)
@@ -87,13 +86,11 @@ export default function NitiPage() {
     if (data) setSessions(data);
   };
 
-  // B. Load a Specific Chat
   const loadSession = async (sessionId) => {
     setCurrentSessionId(sessionId);
     setIsLoading(true);
     
-    // Fetch Messages for this session
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('messages')
       .select('*')
       .eq('conversation_id', sessionId)
@@ -105,34 +102,32 @@ export default function NitiPage() {
       setMessages([initialMsg]);
     }
     
-    if (window.innerWidth < 768) setIsSidebarOpen(false); // Mobile pe sidebar band karo click ke baad
+    if (window.innerWidth < 768) setIsSidebarOpen(false);
     setIsLoading(false);
   };
 
-  // C. Start New Chat
   const startNewChat = () => {
     setCurrentSessionId(null);
     setMessages([initialMsg]);
     if (window.innerWidth < 768) setIsSidebarOpen(false);
   };
 
-  // --- 4. SEND MESSAGE LOGIC (The Brain) ---
+  // --- 4. SEND MESSAGE LOGIC ---
   const handleSend = async () => {
     if (!input.trim()) return;
     const userText = input;
     setInput("");
 
-    // UI Update immediately
     setMessages(prev => [...prev, { id: Date.now(), role: "user", content: userText }]);
     setIsLoading(true);
 
     let activeSession = currentSessionId;
 
     try {
-      // STEP A: Create Session if it doesn't exist (First Message)
+      // Create Session if new
       if (!activeSession && user) {
-        const title = userText.slice(0, 30) + "..."; // Pehle 30 letters ko title banao
-        const { data: newSession, error } = await supabase
+        const title = userText.slice(0, 30) + "...";
+        const { data: newSession } = await supabase
           .from('conversations')
           .insert([{ user_id: user.id, title: title }])
           .select()
@@ -141,18 +136,18 @@ export default function NitiPage() {
         if (newSession) {
           activeSession = newSession.id;
           setCurrentSessionId(newSession.id);
-          setSessions(prev => [newSession, ...prev]); // Sidebar update karo
+          setSessions(prev => [newSession, ...prev]);
         }
       }
 
-      // STEP B: Save User Message
+      // Save User Message
       if (user && activeSession) {
         await supabase.from('messages').insert([{ 
           role: "user", content: userText, user_id: user.id, conversation_id: activeSession 
         }]);
       }
 
-      // STEP C: Call AI Backend
+      // Call AI Backend
       const res = await fetch('https://niti-backend.onrender.com/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -161,14 +156,13 @@ export default function NitiPage() {
       const data = await res.json();
       const botResponse = data.response || "No response.";
 
-      // STEP D: Save Bot Message
+      // Save Bot Message
       if (user && activeSession) {
         await supabase.from('messages').insert([{ 
           role: "assistant", content: botResponse, user_id: user.id, conversation_id: activeSession 
         }]);
       }
 
-      // Final UI Update
       setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: botResponse }]);
 
     } catch (error) {
@@ -182,13 +176,30 @@ export default function NitiPage() {
   // --- UTILS ---
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(() => { scrollToBottom() }, [messages, isLoading]);
-  useEffect(() => { if(isDark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }, [isDark]);
+  
+  useEffect(() => { 
+    if(isDark) document.documentElement.classList.add('dark'); 
+    else document.documentElement.classList.remove('dark'); 
+  }, [isDark]);
 
-  const startListening = () => { /* ... Voice Logic Same ... */ };
+  const startListening = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-IN';
+      recognition.onresult = (event) => setInput(event.results[0][0].transcript);
+      recognition.start();
+    } else {
+      alert("Voice input not supported in this browser.");
+    }
+  };
 
+  // --- RENDER ---
   return (
     <div className={`niti-layout ${isDark ? 'dark' : ''}`}>
       <div className="niti-bg-pattern"></div>
+      
+      {/* MODALS */}
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
       <OnboardingModal isOpen={showOnboarding} userId={user?.id} onComplete={() => setShowOnboarding(false)} />
 
@@ -218,7 +229,7 @@ export default function NitiPage() {
               </button>
             </div>
 
-            {/* --- SESSION LIST (REAL HISTORY) --- */}
+            {/* SESSION LIST */}
             <div className="flex-1 overflow-y-auto px-3 space-y-1">
               <p className="text-xs font-semibold opacity-50 px-2 mb-2">HISTORY</p>
               {sessions.length === 0 ? (
@@ -260,6 +271,7 @@ export default function NitiPage() {
         )}
       </AnimatePresence>
 
+      {/* MAIN CONTENT */}
       <main className="niti-main w-full">
         <header className="niti-header">
           <div className="flex items-center gap-3">
@@ -270,9 +282,18 @@ export default function NitiPage() {
         </header>
 
         <div className="niti-chat-area">
-          {messages.map((msg) => (
+          {messages.map((msg, index) => (
             <div key={msg.id} className="w-full">
-              {msg.role === "user" ? <UserMessage content={msg.content} /> : <BotMessage content={msg.content} isDark={isDark} />}
+              {msg.role === "user" ? (
+                <UserMessage content={msg.content} />
+              ) : (
+                <BotMessage 
+                  content={msg.content} 
+                  isDark={isDark} 
+                  // Logic: Sirf aakhri message agar abhi aaya hai to animate karo
+                  isNew={index === messages.length - 1 && !isLoading && index > 0} 
+                />
+              )}
             </div>
           ))}
           {isLoading && <BotMessage content="" isTyping={true} isDark={isDark} />}
