@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Volume2, StopCircle } from 'lucide-react';
+import { Volume2, StopCircle, ShieldCheck } from 'lucide-react';
 
 // --- TYPING INDICATOR ---
 export function TypingIndicator({ isDark }) {
@@ -23,7 +23,6 @@ function TypewriterText({ content, onComplete }) {
   
   useEffect(() => {
     let index = 0;
-    // Speed control: 5ms for faster typing
     const intervalId = setInterval(() => {
       setDisplayedText((prev) => prev + content.charAt(index));
       index++;
@@ -51,17 +50,19 @@ function TypewriterText({ content, onComplete }) {
   );
 }
 
-// --- BOT MESSAGE (With Speaker) ---
+// --- BOT MESSAGE (With Fixed Speaker) ---
 export function BotMessage({ content, isTyping, isDark, isNew }) {
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // Function to strip Markdown symbols (*, #, links) for clean reading
+  // --- CLEANER FUNCTION (Removes Emojis & formatting) ---
   const cleanTextForSpeech = (text) => {
     return text
       .replace(/\*\*/g, '')       // Remove Bold
       .replace(/#/g, '')          // Remove Headers
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Keep link text, remove URL
-      .replace(/https?:\/\/\S+/g, 'link'); // Replace raw URLs with word "link"
+      // Remove Emojis (Important Fix)
+      .replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Keep link text
+      .replace(/https?:\/\/\S+/g, 'website link'); // Say "website link"
   };
 
   const handleSpeak = () => {
@@ -72,12 +73,13 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
       const textToRead = cleanTextForSpeech(content);
       const utterance = new SpeechSynthesisUtterance(textToRead);
       
-      // Try to find an Indian English/Hindi voice
       const voices = window.speechSynthesis.getVoices();
-      const indianVoice = voices.find(v => v.lang.includes('IN')) || voices[0];
-      if (indianVoice) utterance.voice = indianVoice;
+      // Prefer Hindi Google Voice if available, else standard
+      const preferredVoice = voices.find(v => v.name.includes('Google हिन्दी')) || voices.find(v => v.lang.includes('IN')) || voices[0];
+      
+      if (preferredVoice) utterance.voice = preferredVoice;
 
-      utterance.rate = 1; // Speed
+      utterance.rate = 1; 
       utterance.pitch = 1; 
 
       utterance.onend = () => setIsSpeaking(false);
@@ -86,7 +88,6 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
     }
   };
 
-  // Stop speaking if component unmounts (user leaves chat)
   useEffect(() => {
     return () => window.speechSynthesis.cancel();
   }, []);
@@ -95,7 +96,7 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="flex gap-3 max-w-3xl w-full group" // 'group' for hover effects
+      className="flex gap-3 max-w-3xl w-full"
     >
       {/* Saffron Strip */}
       <div className="w-1 rounded-full shrink-0 bg-[#FF9933]" />
@@ -105,6 +106,7 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
           <TypingIndicator isDark={isDark} />
         ) : (
           <div className="relative">
+            {/* Message Text */}
             <div className={`text-[15px] ${isDark ? "text-gray-100" : "text-slate-800"}`}>
                {isNew ? (
                   <TypewriterText content={content} />
@@ -123,26 +125,30 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
                )}
             </div>
 
-            {/* SPEAKER BUTTON (Only shows when not typing) */}
+            {/* SPEAKER BUTTON (Always Visible Now) */}
             {!isNew && (
-              <button 
-                onClick={handleSpeak}
-                className={`mt-2 p-1.5 rounded-full transition-all flex items-center gap-2 text-xs font-medium border ${
-                  isSpeaking 
-                    ? 'bg-orange-100 text-orange-600 border-orange-200' 
-                    : 'opacity-0 group-hover:opacity-100 bg-transparent text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                {isSpeaking ? (
-                  <>
-                    <StopCircle size={14} className="animate-pulse" /> Stop Reading
-                  </>
-                ) : (
-                  <>
-                    <Volume2 size={14} /> Listen
-                  </>
-                )}
-              </button>
+              <div className="mt-3 flex">
+                <button 
+                  onClick={handleSpeak}
+                  className={`px-3 py-1.5 rounded-full transition-all flex items-center gap-2 text-xs font-semibold border shadow-sm ${
+                    isSpeaking 
+                      ? 'bg-red-100 text-red-600 border-red-200' 
+                      : isDark 
+                        ? 'bg-[#333] text-gray-300 border-[#444] hover:bg-[#444]'
+                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                  }`}
+                >
+                  {isSpeaking ? (
+                    <>
+                      <StopCircle size={14} className="animate-pulse" /> Stop Reading
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 size={14} /> Listen
+                    </>
+                  )}
+                </button>
+              </div>
             )}
           </div>
         )}
