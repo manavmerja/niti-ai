@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Volume2, StopCircle, ShieldCheck } from 'lucide-react';
+import { Volume2, StopCircle } from 'lucide-react';
 
 // --- TYPING INDICATOR ---
 export function TypingIndicator({ isDark }) {
@@ -50,12 +50,12 @@ function TypewriterText({ content, onComplete }) {
   );
 }
 
-// --- BOT MESSAGE (Fix: Speaker always visible after typing) ---
+// --- BOT MESSAGE (Corrected Props) ---
 export function BotMessage({ content, isTyping, isDark, isNew }) {
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isTypingDone, setIsTypingDone] = useState(!isNew); // Agar naya nahi hai, to typing pehle se done hai
+  const [isTypingDone, setIsTypingDone] = useState(!isNew);
 
-  // Function to strip Markdown for Speech
+  // Cleaner Function
   const cleanTextForSpeech = (text) => {
     return text
       .replace(/\*\*/g, '')
@@ -91,6 +91,7 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
       className="flex gap-3 max-w-3xl w-full group"
     >
       <div className="w-1 rounded-full shrink-0 bg-[#FF9933]" />
+      
       <div className="py-1 w-full">
         {isTyping ? (
           <TypingIndicator isDark={isDark} />
@@ -99,60 +100,6 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
             <div className={`text-[15px] ${isDark ? "text-gray-100" : "text-slate-800"}`}>
                {isNew && !isTypingDone ? (
                   <TypewriterText content={content} onComplete={() => setIsTypingDone(true)} />
-               ) : (
-                  <ReactMarkdown 
-                    remarkPlugins={[remarkGfm]} 
-                    className="prose leading-relaxed break-words"
-                    components={{
-                      a: ({ node, ...props }) => (<a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-bold" />)
-                    }}
-                  >
-                    {content}
-                  </ReactMarkdown>
-               )}
-            </div>
-
-            {/* SPEAKER BUTTON (Shows when typing is done OR message is old) */}
-            {(isTypingDone || !isNew) && (
-              <div className="mt-3 flex opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <button 
-                  onClick={handleSpeak}
-                  className={`px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-semibold border shadow-sm transition-all ${
-                    isSpeaking 
-                      ? 'bg-red-100 text-red-600 border-red-200 opacity-100' // Speaking mode me hamesha dikhega
-                      : isDark 
-                        ? 'bg-[#333] text-gray-300 border-[#444] hover:bg-[#444]'
-                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                  }`}
-                >
-                  {isSpeaking ? (<><StopCircle size={14} className="animate-pulse" /> Stop</>) : (<><Volume2 size={14} /> Listen</>)}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
-}
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="flex gap-3 max-w-3xl w-full"
-    >
-      {/* Saffron Strip */}
-      <div className="w-1 rounded-full shrink-0 bg-[#FF9933]" />
-      
-      <div className="py-1 w-full">
-        {isTyping ? (
-          <TypingIndicator isDark={isDark} />
-        ) : (
-          <div className="relative">
-            {/* Message Text */}
-            <div className={`text-[15px] ${isDark ? "text-gray-100" : "text-slate-800"}`}>
-               {isNew ? (
-                  <TypewriterText content={content} />
                ) : (
                   <ReactMarkdown 
                     remarkPlugins={[remarkGfm]} 
@@ -168,12 +115,12 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
                )}
             </div>
 
-            {/* SPEAKER BUTTON (Always Visible Now) */}
-            {!isNew && (
-              <div className="mt-3 flex">
+            {/* SPEAKER BUTTON */}
+            {(isTypingDone || !isNew) && (
+              <div className="mt-3 flex opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
                 <button 
                   onClick={handleSpeak}
-                  className={`px-3 py-1.5 rounded-full transition-all flex items-center gap-2 text-xs font-semibold border shadow-sm ${
+                  className={`px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-semibold border shadow-sm transition-all ${
                     isSpeaking 
                       ? 'bg-red-100 text-red-600 border-red-200' 
                       : isDark 
@@ -182,13 +129,9 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
                   }`}
                 >
                   {isSpeaking ? (
-                    <>
-                      <StopCircle size={14} className="animate-pulse" /> Stop Reading
-                    </>
+                    <><StopCircle size={14} className="animate-pulse" /> Stop</>
                   ) : (
-                    <>
-                      <Volume2 size={14} /> Listen
-                    </>
+                    <><Volume2 size={14} /> Listen</>
                   )}
                 </button>
               </div>
@@ -198,6 +141,7 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
       </div>
     </motion.div>
   );
+}
 
 // --- USER MESSAGE ---
 export function UserMessage({ content }) {
