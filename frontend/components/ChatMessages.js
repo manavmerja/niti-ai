@@ -20,7 +20,7 @@ export function TypingIndicator({ isDark }) {
   );
 }
 
-// --- TYPEWRITER COMPONENT (New Magic 🪄) ---
+// --- TYPEWRITER COMPONENT (Updated for Links) ---
 function TypewriterText({ content, onComplete }) {
   const [displayedText, setDisplayedText] = useState("");
   
@@ -33,13 +33,21 @@ function TypewriterText({ content, onComplete }) {
         clearInterval(intervalId);
         if (onComplete) onComplete();
       }
-    }, 10); // Speed: 10ms per character (Adjust for speed)
+    }, 10); 
 
     return () => clearInterval(intervalId);
   }, [content]);
 
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose text-[15px] leading-relaxed break-words">
+    <ReactMarkdown 
+      remarkPlugins={[remarkGfm]} 
+      className="prose text-[15px] leading-relaxed break-words"
+      components={{
+        a: ({ node, ...props }) => (
+          <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium" />
+        )
+      }}
+    >
       {displayedText}
     </ReactMarkdown>
   );
@@ -65,11 +73,19 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
         ) : (
           <div className={`text-[15px] ${isDark ? "text-gray-100" : "text-slate-800"}`}>
              
-             {/* TYPEWRITER EFFECT */}
+             {/* TYPEWRITER EFFECT with NEW TAB LINKS */}
              {shouldAnimate ? (
                 <TypewriterText content={content} />
              ) : (
-                <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose leading-relaxed break-words">
+                <ReactMarkdown 
+                  remarkPlugins={[remarkGfm]} 
+                  className="prose leading-relaxed break-words"
+                  components={{
+                    a: ({ node, ...props }) => (
+                      <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium" />
+                    )
+                  }}
+                >
                   {content}
                 </ReactMarkdown>
              )}
