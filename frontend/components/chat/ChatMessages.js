@@ -36,21 +36,23 @@ function TypewriterText({ content, onComplete }) {
   }, [content]);
 
   return (
-    <ReactMarkdown 
-      remarkPlugins={[remarkGfm]} 
-      className="prose leading-relaxed break-words"
-      components={{
-        a: ({ node, ...props }) => (
-          <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-bold" />
-        )
-      }}
-    >
-      {displayedText}
-    </ReactMarkdown>
+    // FIX: className yahan div par lagaya, ReactMarkdown par nahi
+    <div className="prose leading-relaxed break-words text-[15px]">
+      <ReactMarkdown 
+        remarkPlugins={[remarkGfm]} 
+        components={{
+          a: ({ node, ...props }) => (
+            <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-bold" />
+          )
+        }}
+      >
+        {displayedText}
+      </ReactMarkdown>
+    </div>
   );
 }
 
-// --- BOT MESSAGE (Corrected Props) ---
+// --- BOT MESSAGE ---
 export function BotMessage({ content, isTyping, isDark, isNew }) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isTypingDone, setIsTypingDone] = useState(!isNew);
@@ -101,17 +103,19 @@ export function BotMessage({ content, isTyping, isDark, isNew }) {
                {isNew && !isTypingDone ? (
                   <TypewriterText content={content} onComplete={() => setIsTypingDone(true)} />
                ) : (
-                  <ReactMarkdown 
-                    remarkPlugins={[remarkGfm]} 
-                    className="prose leading-relaxed break-words"
-                    components={{
-                      a: ({ node, ...props }) => (
-                        <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-bold" />
-                      )
-                    }}
-                  >
-                    {content}
-                  </ReactMarkdown>
+                  // FIX: className yahan div par lagaya
+                  <div className="prose leading-relaxed break-words">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]} 
+                      components={{
+                        a: ({ node, ...props }) => (
+                          <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-bold" />
+                        )
+                      }}
+                    >
+                      {content}
+                    </ReactMarkdown>
+                  </div>
                )}
             </div>
 
@@ -157,5 +161,3 @@ export function UserMessage({ content }) {
     </motion.div>
   );
 }
-
-
