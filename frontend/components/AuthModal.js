@@ -49,6 +49,7 @@ export default function AuthModal({ isOpen, onClose }) {
                 <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
+            
 
             {/* Content */}
             <h2 className="text-lg font-semibold mb-2 text-slate-900 dark:text-white">Welcome Back</h2>
@@ -62,6 +63,7 @@ export default function AuthModal({ isOpen, onClose }) {
               <Mail size={18} />
               Sign in with Google
             </button>
+
             
             {/* Divider */}
             <div className="text-center text-xs text-slate-400 mt-4">
