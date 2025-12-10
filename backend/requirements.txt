@@ -1,17 +1,26 @@
+# --- Web Server (Flask & Gunicorn) ---
+flask
+flask-cors
+gunicorn
+python-dotenv
+
+# --- AI & LangChain (Required for RAG) ---
+langchain-google-genai
+langchain-groq
+langchain-huggingface
+langchain-community
+langchain-core
+
+# --- Database ---
+supabase
+
+# --- Utilities ---
+httpx
+pypdf
+
+# --- Optional (Previous Project Files - Keep if needed) ---
 fastapi
 uvicorn
 crewai
-langchain_groq
-langchain_google_genai
-python-dotenv
-litellm
 crewai-tools
-httpx
-
-
-pypdf
-langchain-community
-langchain-google-genai
-supabase
-
-gunicorn
+litellm
