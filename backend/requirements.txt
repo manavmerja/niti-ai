@@ -13,3 +13,5 @@ pypdf
 langchain-community
 langchain-google-genai
 supabase
+
+gunicorn
