@@ -1,0 +1,25 @@
+# Scheme Name: Sukanya Samriddhi Yojana (SSY)
+State: Central Government
+Sector: Women & Child Development / Savings
+
+## Description
+A small deposit scheme for the girl child launched as a part of the 'Beti Bachao Beti Padhao' campaign. It offers a high interest rate and tax benefits.
+
+## Eligibility Criteria
+- Parents or legal guardians can open an account in the name of a girl child.
+- The girl child must be below the age of **10 years**.
+- Only one account per girl child. Maximum two accounts per family (for two daughters).
+
+## Benefits
+- High Interest Rate (currently around 8.2% per annum).
+- Tax Deduction benefit under Section 80C (up to ₹1.5 lakh).
+- Maturity period is 21 years from the date of opening the account.
+- Partial withdrawal (50%) allowed for the girl's higher education after she turns 18.
+
+## Documents Required
+- Birth Certificate of the girl child.
+- ID and Address proof of the parent/guardian (Aadhaar/PAN).
+- Deposit amount (Min ₹250).
+
+## Official Link
+https://www.nsiindia.gov.in/InternalPage.aspx?Id_Pk=89

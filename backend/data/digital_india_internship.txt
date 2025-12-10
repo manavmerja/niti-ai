@@ -1,0 +1,20 @@
+# Scheme Name: Digital India Internship Scheme
+State: Central Government (MeitY)
+Sector: Education / Internship
+
+## Description
+An internship program by the Ministry of Electronics and Information Technology (MeitY) for Indian students to gain practical work experience in Digital India projects.
+
+## Eligibility Criteria
+- Indian students from recognized universities in India.
+- Must be pursuing B.E./B.Tech (3rd/4th year) or M.E./M.Tech/M.Sc (Electronics/CS/IT).
+- Minimum **60% marks** in the last degree or semester.
+
+## Benefits
+- Token remuneration (Stipend) of **₹10,000 per month**.
+- Certificate of Internship from MeitY upon completion.
+- Exposure to government functioning and Digital India initiatives.
+- Duration: 2 months (can be extended to 3 months).
+
+## Official Link
+https://www.meity.gov.in/writereaddata/files/Digital_India_Internship_Scheme.pdf

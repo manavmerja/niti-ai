@@ -1,0 +1,25 @@
+# Scheme Name: PM Ujjwala Yojana (PMUY)
+State: Central Government
+Sector: Women / Energy / BPL
+
+## Description
+Pradhan Mantri Ujjwala Yojana aims to provide clean cooking fuel (LPG) to rural and deprived households who are otherwise using traditional cooking fuels (wood, coal, dung cakes) which are harmful to health.
+
+## Eligibility Criteria
+- Adult woman belonging to a poor household (BPL).
+- Must not have an existing LPG connection in the household.
+- Priority to SC/ST, Antyodaya Anna Yojana (AAY), Forest Dwellers, etc.
+
+## Benefits
+- Cash assistance of **₹1,600** for a new connection (covers Security Deposit of Cylinder, Regulator, etc.).
+- First Refill and Stove (Hotplate) is provided free of cost by Oil Marketing Companies.
+- Improves women's health by reducing indoor air pollution.
+
+## Documents Required
+- KYC of the applicant.
+- Ration Card / Family composition document.
+- Aadhaar of the applicant.
+- Bank Account Number and IFSC.
+
+## Official Link
+https://www.pmuy.gov.in/

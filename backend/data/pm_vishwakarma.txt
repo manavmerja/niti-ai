@@ -1,0 +1,20 @@
+# Scheme Name: PM Vishwakarma Yojana
+State: Central Government
+Sector: Skill Development / Artisans
+
+## Description
+A new central sector scheme to support traditional artisans and craftspeople (Vishwakarmas) working with their hands and tools.
+
+## Eligibility Criteria
+- Artisans working in 18 traditional trades (Carpenter, Boat Maker, Blacksmith, Potter, Sculptor, Cobbler, Mason, Barber, Washerman, Tailor, etc.).
+- Minimum age: 18 years.
+- Should not have availed loans under PMEGP, PM SVANidhi, or Mudra in the past 5 years.
+
+## Benefits
+- **Recognition:** PM Vishwakarma Certificate and ID Card.
+- **Skill Upgradation:** Basic Training (5-7 days) with a stipend of ₹500 per day.
+- **Toolkit Incentive:** Grant of ₹15,000 for buying modern tools.
+- **Credit Support:** Collateral-free loans up to ₹1 lakh (First Tranche) and ₹2 lakh (Second Tranche) at a concessional interest rate of 5%.
+
+## Official Link
+https://pmvishwakarma.gov.in/

@@ -1,0 +1,21 @@
+# Scheme Name: Pradhan Mantri Awas Yojana - Gramin (PMAY-G)
+State: Central Government
+Sector: Rural Housing
+
+## Description
+Aims to provide a pucca house with basic amenities to all houseless households and those living in kutcha and dilapidated houses.
+
+## Eligibility Criteria
+- Families identified based on SECC 2011 data (Socio-Economic Caste Census).
+- Houseless families or families living in zero, one, or two-room kutcha houses.
+- No motorized two-wheeler/three-wheeler/fishing boat.
+- No member earning more than ₹10,000 per month.
+- No Kisan Credit Card with limit above ₹50,000.
+
+## Benefits
+- Financial assistance of **₹1,20,000** in plain areas and **₹1,30,000** in hilly states for construction of house.
+- Additional assistance of ₹12,000 for toilet construction under Swachh Bharat Mission.
+- 90-95 days of unskilled labour wage under MGNREGA.
+
+## Official Link
+https://pmayg.nic.in/

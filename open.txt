@@ -1,0 +1,4 @@
+.\venv\Scripts\Activate
+
+python ingest.py
+

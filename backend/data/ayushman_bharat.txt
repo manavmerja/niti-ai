@@ -1,0 +1,35 @@
+# Scheme Name: Ayushman Bharat Yojana (PM-JAY)
+State: Central Government
+Sector: Health / Medical Insurance
+
+## Description
+Ayushman Bharat Pradhan Mantri Jan Arogya Yojana (PM-JAY) is the world's largest health insurance scheme fully financed by the government. It provides a cover of Rs. 5 lakhs per family per year for secondary and tertiary care hospitalization across public and private empanelled hospitals in India.
+
+## Eligibility Criteria
+1. **Rural:**
+   - Families living in only one room with kucha walls and kucha roof.
+   - Families with no adult member between age 16 to 59.
+   - Female-headed households with no adult male member between age 16 to 59.
+   - Disabled member and no able-bodied adult member in the family.
+   - SC/ST households.
+   - Landless households deriving major part of their income from manual casual labour.
+2. **Urban:**
+   - Rag picker, Beggar, Domestic worker, Street vendor, Cobbler, Hawker, Other service providers working on streets.
+   - Construction worker, Plumber, Mason, Painter, Welder, Security guard, Coolie.
+   - Sweeper, Sanitation worker, Mali.
+
+## Benefits
+- Health coverage of **₹5,00,000 per family per year**.
+- Cashless and paperless access to services at empanelled hospitals.
+- Covers 3 days of pre-hospitalization and 15 days of post-hospitalization expenses (like medicines and tests).
+- No restriction on family size, age, or gender.
+- All pre-existing conditions are covered from day one.
+
+## Documents Required
+- Aadhaar Card / PAN Card
+- Ration Card
+- Mobile Number
+- Caste Certificate (if applicable)
+
+## Official Link
+https://pmjay.gov.in/

@@ -1,0 +1,40 @@
+# Scheme Name: Mukhyamantri Yuva Swavalamban Yojana (MYSY)
+State: Gujarat
+Sector: Education / Scholarship
+
+## Description
+MYSY is a scholarship scheme by the Government of Gujarat to help economically weaker but meritorious students pursue higher education (Diploma, Engineering, Medical, etc.).
+
+## Eligibility Criteria
+1. **Academic:**
+   - For Bachelor's Course: 80 percentile or more in Std 12 (Science/General Stream).
+   - For Diploma Course: 80 percentile or more in Std 10.
+   - For D-to-D (Diploma to Degree): 65% or more in Diploma.
+2. **Income:**
+   - Annual family income must be less than ₹6,00,000 (6 Lakhs).
+3. **Other:**
+   - Student must be a resident of Gujarat.
+   - Not applicable for Post-Graduation courses (only for UG).
+
+## Benefits
+1. **Tuition Fee Support:**
+   - Medical/Dental: 50% of fees or ₹2,00,000 (whichever is less).
+   - Engineering/Pharmacy/Professional: 50% of fees or ₹50,000 (whichever is less).
+   - Diploma: 50% of fees or ₹25,000 (whichever is less).
+   - BA/BCom/BSc: 50% of fees or ₹10,000 (whichever is less).
+2. **Hostel Support:**
+   - ₹1,200 per month (₹12,000 per year) for students studying outside their taluka and staying in private hostels/PG.
+3. **Book/Instrument Assistance:**
+   - One-time grant: ₹10,000 (Medical), ₹5,000 (Engineering), ₹3,000 (Diploma).
+
+## Documents Required
+- Aadhaar Card (Student & Parents)
+- Income Certificate (Mamlatdar/TDO)
+- 10th / 12th Marksheet
+- Admission Letter from College
+- Fee Receipts (Tuition Fee)
+- Bank Passbook (First Page)
+- Self Declaration Form
+
+## Official Link
+https://mysy.gujarat.gov.in/

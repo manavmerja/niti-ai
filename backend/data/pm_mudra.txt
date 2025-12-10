@@ -1,0 +1,24 @@
+# Scheme Name: Pradhan Mantri MUDRA Yojana (PMMY)
+State: Central Government
+Sector: Business / MSME Loan
+
+## Description
+PMMY provides loans up to ₹10 lakh to non-corporate, non-farm small/micro enterprises. These loans are classified as MUDRA loans under PMMY. These loans are given by Commercial Banks, RRBs, Small Finance Banks, MFIs and NBFCs.
+
+## Loan Categories (Products)
+1. **Shishu:** Covering loans up to ₹50,000.
+2. **Kishore:** Covering loans above ₹50,000 and up to ₹5 lakh.
+3. **Tarun:** Covering loans above ₹5 lakh and up to ₹10 lakh.
+
+## Eligibility Criteria
+- Any Indian Citizen who has a business plan for a non-farm sector income generating activity.
+- Examples: Manufacturing, Processing, Trading, or Service Sector.
+- Shopkeepers, Fruits/Vegetable vendors, Truck operators, Artisans.
+
+## Benefits
+- No collateral (security) required.
+- No processing fee for Shishu and Kishore loans.
+- Helps small businesses expand.
+
+## Official Link
+https://www.mudra.org.in/

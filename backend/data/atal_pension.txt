@@ -1,0 +1,21 @@
+# Scheme Name: Atal Pension Yojana (APY)
+State: Central Government
+Sector: Pension / Social Security
+
+## Description
+Atal Pension Yojana (APY) is a pension scheme for citizens of India, focused on the unorganized sector workers. Under the APY, guaranteed minimum pension of Rs. 1,000/-, 2,000/-, 3,000/-, 4,000/- and 5,000/- per month will be given at the age of 60 years depending on the contributions by the subscribers.
+
+## Eligibility Criteria
+- Must be a Citizen of India.
+- Age must be between **18 years and 40 years**.
+- Must have a Savings Bank Account or Post Office Savings Bank Account.
+- Should possess a valid Mobile number.
+
+## Benefits
+- Guaranteed monthly pension between ₹1,000 to ₹5,000 after the age of 60.
+- In case of death of the subscriber, pension is paid to the spouse.
+- In case of death of both subscriber and spouse, the pension corpus is returned to the nominee.
+- Tax benefits under Section 80CCD.
+
+## Official Link
+https://www.npscra.nsdl.co.in/scheme-details.php
