@@ -1,15 +1,16 @@
-# --- Web Server (Flask & Gunicorn) ---
+# --- Web Server ---
 flask
 flask-cors
 gunicorn
 python-dotenv
 
-# --- AI & LangChain (Required for RAG) ---
+# --- AI & LangChain ---
 langchain-google-genai
 langchain-groq
 langchain-huggingface
 langchain-community
 langchain-core
+sentence-transformers
 
 # --- Database ---
 supabase
@@ -18,7 +19,7 @@ supabase
 httpx
 pypdf
 
-# --- Optional (Previous Project Files - Keep if needed) ---
+# --- Optional (Purane) ---
 fastapi
 uvicorn
 crewai
