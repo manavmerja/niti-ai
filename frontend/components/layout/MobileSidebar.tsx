@@ -59,7 +59,7 @@ export default function MobileSidebar() {
 
             <div className="flex flex-col items-start text-left">
                 <span className="font-medium text-sm">About Niti.ai</span>
-                <span className="text-[10px] text-muted-foreground">v1.0 • Made with ❤️ in India</span>
+                <span className="text-[10px] text-muted-foreground">v1.0.0 • Made by Manav Merja</span>
             </div>
         </Button>
     </AboutDialog>

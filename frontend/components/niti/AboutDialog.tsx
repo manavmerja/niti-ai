@@ -56,7 +56,7 @@ export function AboutDialog({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="flex items-center justify-between border-b border-border/50 pb-2">
                     <span>Developer</span>
-                    <span className="text-foreground">Your Name / Team</span>
+                    <span className="text-foreground">Manav Merja</span>
                 </div>
                 <div className="flex items-center justify-between">
                     <span>Tech Stack</span>
