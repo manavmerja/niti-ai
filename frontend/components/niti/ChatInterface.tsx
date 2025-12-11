@@ -160,15 +160,47 @@ export default function ChatInterface() {
             ))}
           </AnimatePresence>
 
-          {/* Loading Indicator (Fixed Layout) */}
+         {/* --- PULSING BRAIN LOADER (Option B) --- */}
           {isLoading && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-4">
-              <div className="w-8 h-8 bg-niti-blue/20 text-niti-blue rounded-lg flex items-center justify-center animate-pulse shrink-0">
-                <Bot size={16} />
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-card px-4 py-2 rounded-full border border-border/40">
-                <span>Analyzing Schemes</span>
-                <Loader2 className="w-3 h-3 animate-spin" />
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              className="flex items-start gap-4"
+            >
+              {/* 1. The Glowing/Pulsing Logo */}
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.1, 1], // Bada-Chhota hoga (Breathing)
+                  opacity: [0.8, 1, 0.8], // Glow karega
+                  boxShadow: [
+                    "0px 0px 0px rgba(59, 130, 246, 0)", // Blue Glow Start
+                    "0px 0px 20px rgba(59, 130, 246, 0.6)", // Blue Glow Max
+                    "0px 0px 0px rgba(59, 130, 246, 0)"  // Blue Glow End
+                  ]
+                }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+                className="relative w-10 h-10 rounded-xl overflow-hidden border border-blue-500/30 bg-background"
+              >
+                <Image 
+                  src="/niti-photo.webp" // Tumhara Logo
+                  alt="Thinking..."
+                  fill
+                  className="object-cover"
+                />
+              </motion.div>
+
+              {/* 2. Text Indicator */}
+              <div className="flex flex-col justify-center h-10 space-y-1">
+                <span className="text-sm font-medium text-niti-blue animate-pulse">
+                  Analyzing Schemes...
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  Checking database for best answers
+                </span>
               </div>
             </motion.div>
           )}
