@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation" // <-- NEW IMPORT
 import { useUser, SignInButton } from "@clerk/nextjs" // <-- Clerk Hooks
 import { toast } from "sonner" 
 import { CopyButton } from "../ui/copy-button" 
@@ -22,6 +23,7 @@ type Message = {
 
 export default function ChatInterface() {
   const { isSignedIn } = useUser() // <-- Check login status
+  const router = useRouter() // <-- NEW
   
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -48,7 +50,7 @@ export default function ChatInterface() {
          description: "You are chatting as a Guest. Sign in to save history.",
          action: {
            label: "Sign In",
-           onClick: () => document.getElementById('hidden-signin-btn')?.click()
+           onClick: () => router.push('/sign-in')
          }
        })
      }
@@ -222,14 +224,7 @@ export default function ChatInterface() {
           Niti.ai can make mistakes. Always check official govt sources.
         </p>
       </div>
-
-      {/* --- HIDDEN SIGN IN BUTTON (Triggered by Toast) --- */}
-      <div className="hidden">
-         <SignInButton mode="modal">
-            <button id="hidden-signin-btn">Sign In</button>
-         </SignInButton>
-      </div>
-
+      
     </div>
   )
 }

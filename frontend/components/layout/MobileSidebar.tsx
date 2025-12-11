@@ -1,5 +1,5 @@
 "use client"
-
+import Link from "next/link" // <-- NEW IMPORT
 import { Menu, Plus, MessageSquare, Info, LogIn, LogOut } from "lucide-react"
 import { Button } from "../ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "../ui/sheet"
@@ -81,11 +81,11 @@ export default function MobileSidebar() {
                    {/* Guest ke liye Warning Box */}
                    <div className="px-2 py-4 text-center border border-dashed border-border rounded-lg bg-muted/20">
                       <p className="text-xs text-muted-foreground mb-2">Sign in to save your chat history.</p>
-                      <SignInButton mode="modal">
-                        <Button variant="outline" size="sm" className="w-full gap-2">
-                           <LogIn size={14} /> Sign In
-                        </Button>
-                      </SignInButton>
+                     <Link href="/sign-in" className="w-full">
+                         <Button variant="outline" size="sm" className="w-full gap-2">
+                             <LogIn size={14} /> Sign In
+                         </Button>  
+                     </Link>
                    </div>
                 </SignedOut>
             </div>
