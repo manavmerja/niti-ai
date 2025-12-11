@@ -30,9 +30,9 @@ def get_rag_response(query_text):
         
         retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
-        # --- LLM (GROQ) ---
+       # --- 2. LLM (GROQ - New Llama 3.3) ---
         llm = ChatGroq(
-            model="llama3-8b-8192", 
+            model="llama-3.3-70b-versatile", # <-- NEW & POWERFUL
             temperature=0.3,
             api_key=os.getenv("GROQ_API_KEY")
         )
