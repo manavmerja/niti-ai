@@ -1,5 +1,6 @@
 "use client"
 
+import { AboutDialog } from "../niti/AboutDialog" // Check path
 import { Menu, Plus, MessageSquare, Info } from "lucide-react"
 import { Button } from "../ui/button"
 // IMPORT UPDATE: 'SheetTitle' add kiya
@@ -45,22 +46,24 @@ export default function MobileSidebar() {
             </div>
         </div>
 
-        {/* --- FOOTER --- */}
-        <div className="p-4 bg-muted/20 border-t border-border/50">
-            <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-3 h-auto py-3 hover:bg-background transition-all group px-2"
-            >
-                <div className="w-9 h-9 rounded-full bg-niti-blue/10 flex items-center justify-center text-niti-blue group-hover:bg-niti-blue group-hover:text-white transition-colors">
-                    <Info size={18} />
-                </div>
-                
-                <div className="flex flex-col items-start text-left">
-                    <span className="font-medium text-sm">About Niti.ai</span>
-                    <span className="text-[10px] text-muted-foreground">v1.0 • Made with ❤️ in India</span>
-                </div>
-            </Button>
-        </div>
+       {/* --- FOOTER (Full Width / Edge-to-Edge) --- */}
+<div className="p-4 bg-muted/20 border-t border-border/50">
+    <AboutDialog>
+        <Button 
+            variant="ghost" 
+            className="w-full justify-start gap-3 h-auto py-3 hover:bg-background transition-all group px-2"
+        >
+            <div className="w-9 h-9 rounded-full bg-niti-blue/10 flex items-center justify-center text-niti-blue group-hover:bg-niti-blue group-hover:text-white transition-colors">
+                <Info size={18} />
+            </div>
+
+            <div className="flex flex-col items-start text-left">
+                <span className="font-medium text-sm">About Niti.ai</span>
+                <span className="text-[10px] text-muted-foreground">v1.0 • Made with ❤️ in India</span>
+            </div>
+        </Button>
+    </AboutDialog>
+</div>
 
       </SheetContent>
     </Sheet>

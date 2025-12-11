@@ -1,17 +1,18 @@
 "use client"
 
-// Ensure path is correct based on your folder structure
-import Image from "next/image"
-import SuggestionChips from "../chat/SuggestionChips" 
+
+import { CopyButton } from "../ui/copy-button" 
+import TextareaAutosize from "react-textarea-autosize" // <-- NEW IMPORT
 import React, { useState, useRef, useEffect } from "react"
+import { MarkdownRenderer } from "../ui/markdown-renderer" // <-- Import New Component
+import SuggestionChips from "../chat/SuggestionChips"
 import { Send, Sparkles, User, Bot, Loader2 } from "lucide-react"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { ScrollArea } from "../ui/scroll-area"
 import { motion, AnimatePresence } from "framer-motion"
-import { TypingEffect } from "../ui/typing-effect" // Path check kar lena
+import Image from "next/image"
 
-// --- TYPES ---
 type Message = {
   id: string
   role: "user" | "ai"
@@ -30,180 +31,176 @@ export default function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  // Auto-scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, isLoading])
 
-  // --- HANDLE SEND ---
   const handleSend = async () => {
     if (!input.trim()) return
 
-    // 1. Add User Message
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: input }
     setMessages((prev) => [...prev, userMsg])
     setInput("")
     setIsLoading(true)
 
     try {
-      // NOTE: Jab Render LIVE ho jaye, tab ye URL change karna padega
-      const res = await fetch("http://127.0.0.1:10000/chat", {
+      // NOTE: Abhi ke liye ye URL dummy hai, jab backend fix hoga tab chalega
+      const res = await fetch("https://niti-ai.onrender.com/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: userMsg.content }),
       })
 
       const data = await res.json()
-
-      // 3. Add AI Message
       const aiMsg: Message = { 
         id: (Date.now() + 1).toString(), 
         role: "ai", 
-        content: data.response || "Sorry, I couldn't connect to the server." 
+        content: data.response || "Sorry, server response empty." 
       }
       setMessages((prev) => [...prev, aiMsg])
-    } catch (error) {
+   } catch (error) {
       console.error("Error:", error)
-      setMessages((prev) => [...prev, { id: "err", role: "ai", content: "⚠️ Backend connection failed. Is Flask running?" }])
-    } finally {
-      setIsLoading(false)
-    }
+      setMessages((prev) => [
+        ...prev, 
+        { 
+          id: Date.now().toString(), // <-- UNIQUE ID (Zaruri hai)
+          role: "ai", 
+          content: "⚠️ Connection failed. Server is unreachable." 
+        }
+      ])
   }
+}
 
-  // Handle Enter Key
+  // Handle Enter Key (Smart Logic)
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Agar User sirf ENTER dabaye -> Message Send karo
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
+      e.preventDefault() // Nayi line mat banao
       handleSend()
     }
+    // Agar SHIFT + ENTER dabaye -> Nayi line (Default behavior)
   }
 
   return (
-    <div className="flex flex-col h-full w-full mx-auto">
+    <div className="flex flex-col h-full w-full mx-auto relative">
       
-      {/* --- CHAT AREA --- */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-6 pb-4 min-h-[calc(100vh-180px)]"> 
+      {/* --- CHAT SCROLL AREA --- */}
+      <ScrollArea className="flex-1 p-4 pb-32"> {/* pb-32 diya taaki text input ke piche na chupe */}
+        <div className="max-w-4xl mx-auto space-y-6"> {/* max-w-4xl rakha hai taaki reading easy ho */}
           
-          {/* A. GREETING STATE */}
+          {/* Greeting State */}
           {messages.length === 1 && (
             <div className="flex flex-col items-center justify-center py-10 space-y-8 mt-10">
-               {/* Logo Animation */}
                <motion.div 
                  initial={{ scale: 0.8, opacity: 0 }}
                  animate={{ scale: 1, opacity: 1 }}
-                 transition={{ type: "spring", stiffness: 200, damping: 10 }}
-                 className="relative w-24 h-24 flex items-center justify-center rounded-3xl overflow-hidden shadow-2xl shadow-blue-500/20"
+                 className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/20"
                >
-                 <Image 
-                   src="/niti-photo.webp" // <-- Naam check kar lena
-                   alt="Niti Logo"
-                   width={100} 
-                   height={100}
-                   className="object-cover"
-                   priority // Isse fast load hoga
-                 />
+                 <Image src="/niti-photo.webp" alt="Logo" fill className="object-cover" priority />
                </motion.div>
-
                <div className="text-center space-y-2">
-                 <h2 className="text-2xl font-bold tracking-tight text-foreground">How can I help you today?</h2>
+                 <h2 className="text-2xl font-bold tracking-tight">How can I help you today?</h2>
                  <p className="text-muted-foreground">Ask about loans, scholarships, or schemes.</p>
                </div>
-
-               {/* Suggestions Component */}
                <SuggestionChips onSelect={(text) => {
                  setInput(text);
-                 // Thoda delay taaki input me text dikhe fir send ho
                  setTimeout(() => document.getElementById('send-btn')?.click(), 100);
                }} />
             </div>
           )}
 
-          {/* B. MESSAGES LIST (Jab chat shuru ho jaye) */}
-          {messages.length > 1 && (
-            <AnimatePresence mode="popLayout">
-              {messages.map((m) => (
-                 <motion.div
-                   key={m.id}
-                   initial={{ opacity: 0, y: 10 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   className={`flex items-start gap-3 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
-                 >
-                    {/* Avatar */}
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                      m.role === "ai" ? "bg-niti-blue text-white shadow-lg shadow-blue-500/20" : "bg-muted text-foreground"
-                    }`}>
-                      {m.role === "ai" ? <Sparkles size={16} /> : <User size={16} />}
-                    </div>
+          {/* Messages List */}
+          <AnimatePresence mode="popLayout">
+            {messages.length > 1 && messages.map((m) => (
+              <motion.div
+                key={m.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex items-start gap-4 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+              >
+                {/* Avatar */}
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm ${
+                  m.role === "ai" ? "bg-niti-blue text-white" : "bg-muted text-foreground"
+                }`}>
+                  {m.role === "ai" ? <Sparkles size={16} /> : <User size={16} />}
+                </div>
 
-                    {/* Bubble */}
-                    <div className={`rounded-2xl p-4 max-w-[85%] text-sm leading-relaxed shadow-sm ${
-                      m.role === "user" 
-                        ? "bg-primary text-primary-foreground rounded-tr-none" 
-                        : "bg-card border border-border/50 rounded-tl-none"
-                    }`}>
-                      {/* Note: whitespace-pre-wrap helps bullet points formatting */}
-                      <div className="whitespace-pre-wrap font-sans">
-                       {/* Agar message AI ka hai, to Typing Effect dikhao, warna direct text */}
-                         {m.role === "ai" ? (
-                                   <TypingEffect text={m.content} />
-                         ) : (
-                               m.content
-                         )}
-                      </div>
+           {/* Message Bubble */}
+                <div className={`relative group rounded-2xl p-4 max-w-[85%] md:max-w-[75%] shadow-sm ${
+                  m.role === "user" 
+                    ? "bg-primary text-primary-foreground rounded-tr-none" 
+                    : "bg-card border border-border/40 rounded-tl-none"
+                }`}>
+                  
+                  {/* --- COPY BUTTON (Sirf AI messages ke liye) --- */}
+                  {m.role === "ai" && (
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <CopyButton text={m.content} />
                     </div>
-                 </motion.div>
-              ))}
-            </AnimatePresence>
-          )}
+                  )}
 
-          {/* C. LOADING INDICATOR */}
+                  {/* Content */}
+                  {m.role === "ai" ? (
+                    <div className="pr-6"> {/* Thodi padding di taaki button text ke upar na aaye */}
+                       <MarkdownRenderer content={m.content} />
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.content}</p>
+                  )}
+                </div>
+                
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {/* Loading Indicator (Fixed Layout) */}
           {isLoading && (
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              className="flex items-center gap-3"
-            >
-              <div className="w-8 h-8 bg-niti-blue/20 text-niti-blue rounded-full flex items-center justify-center animate-pulse">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-4">
+              <div className="w-8 h-8 bg-niti-blue/20 text-niti-blue rounded-lg flex items-center justify-center animate-pulse shrink-0">
                 <Bot size={16} />
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="animate-pulse">Analyzing Schemes...</span>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-card px-4 py-2 rounded-full border border-border/40">
+                <span>Analyzing Schemes</span>
                 <Loader2 className="w-3 h-3 animate-spin" />
               </div>
             </motion.div>
           )}
           
-          {/* Scroll Anchor */}
           <div ref={bottomRef} />
         </div>
       </ScrollArea>
 
-      {/* --- INPUT AREA (Fixed at Bottom) --- */}
-      <div className="p-4 bg-background/80 backdrop-blur-lg border-t border-border/40 sticky bottom-0 z-10">
-        <div className="relative flex items-center gap-2 w-full">
-          <Input 
+     {/* --- INPUT AREA (Floating Bottom) --- */}
+      <div className="absolute bottom-6 left-0 right-0 px-4">
+        <div className="max-w-4xl mx-auto relative flex items-end gap-2 bg-card/80 backdrop-blur-xl p-2 rounded-[26px] shadow-2xl border border-border/40">
+          
+          {/* Smart Auto-Growing Textarea */}
+          <TextareaAutosize
+            minRows={1}
+            maxRows={5} // 5 lines ke baad scroll aayega
+            placeholder="Ask about Mudra Loan, PM Kisan..."
+            className="flex-1 w-full bg-transparent border-0 focus:ring-0 resize-none outline-none text-base py-3 pl-4 pr-12 max-h-[200px] text-foreground placeholder:text-muted-foreground"
             value={input}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
+            onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about Mudra Loan, PM Kisan..." 
-            className="pr-14 py-6 rounded-full shadow-lg border-border/50 focus-visible:ring-niti-blue/50 bg-card/50 w-full pl-6 text-base"
           />
+
+          {/* Send Button (Bottom-Right aligned) */}
           <Button 
-            id="send-btn" // ID for auto-click
+            id="send-btn"
             size="icon" 
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
-            className="absolute right-2 rounded-full h-10 w-10 bg-niti-blue hover:bg-blue-600 transition-all shadow-md shadow-blue-500/20 flex items-center justify-center"
+            className="shrink-0 h-10 w-10 rounded-full bg-niti-blue hover:bg-blue-600 shadow-lg shadow-blue-500/20 mb-1 mr-1 transition-all"
           >
             {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : <Send size={20} />}
           </Button>
         </div>
-        <p className="text-center text-[11px] text-muted-foreground mt-3 opacity-60">
+        
+        <p className="text-center text-[10px] text-muted-foreground mt-3 opacity-60">
           Niti.ai can make mistakes. Always check official govt sources.
         </p>
       </div>
-
     </div>
   )
 }

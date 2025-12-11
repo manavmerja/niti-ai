@@ -3,7 +3,8 @@ import time
 from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader, DirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+# --- FIX: Correct Import & Class Name ---
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_community.vectorstores import Chroma
 
 load_dotenv()
@@ -12,8 +13,8 @@ DATA_PATH = "./data"
 DB_PATH = "./chroma_db"
 
 def create_vector_db():
-    if not os.getenv("GOOGLE_API_KEY"):
-        print("❌ Error: GOOGLE_API_KEY not found!")
+    if not os.getenv("HUGGINGFACEHUB_API_TOKEN"):
+        print("❌ Error: HUGGINGFACEHUB_API_TOKEN not found!")
         return
 
     print("🔄 Loading Documents...")
@@ -25,7 +26,7 @@ def create_vector_db():
         return
 
     if not documents:
-        print("⚠️ No documents found in 'data' folder.")
+        print("⚠️ No documents found.")
         return
 
     # Chunking
@@ -33,31 +34,31 @@ def create_vector_db():
     chunks = text_splitter.split_documents(documents)
     print(f"✅ Created {len(chunks)} chunks.")
 
-    # --- CHANGE: NEW MODEL & BATCHING ---
-    print("🧠 Initializing Google Embeddings (text-embedding-004)...")
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+    # --- USING NEW HUGGINGFACE CLASS ---
+    print("🧠 Initializing HuggingFace Cloud Embeddings...")
+    embeddings = HuggingFaceEndpointEmbeddings(
+        repo_id="sentence-transformers/all-MiniLM-L6-v2", # 'model_name' nahi, 'repo_id' use hota hai ab
+        huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
+    )
 
-    print("💾 Creating Database (with delays to avoid rate limits)...")
+    print("💾 Creating Database...")
     
-    # Purana DB safai
     if os.path.exists(DB_PATH):
         import shutil
         shutil.rmtree(DB_PATH)
 
-    # Dheere-dheere upload karenge (Batch Processing)
-    batch_size = 5
+    # Batch Processing
+    batch_size = 10
     for i in range(0, len(chunks), batch_size):
         batch = chunks[i:i + batch_size]
         print(f"   Processing batch {i//batch_size + 1}...")
         
-        # Save Batch
         if i == 0:
             db = Chroma.from_documents(batch, embeddings, persist_directory=DB_PATH)
         else:
             db.add_documents(batch)
         
-        # 2 Second ka saans lenge (Rate Limit bypass)
-        time.sleep(2)
+        time.sleep(1) 
 
     print("🎉 Database created successfully!")
 

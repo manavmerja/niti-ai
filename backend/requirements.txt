@@ -1,16 +1,11 @@
-# --- Web Server ---
 flask
 flask-cors
 gunicorn
 python-dotenv
-
-# --- AI & LangChain (Google Only - Lightweight) ---
-langchain-google-genai
+langchain-groq
+langchain-huggingface
 langchain-community
 langchain-core
 chromadb
-
-# --- Utilities ---
 httpx
 pypdf
-
