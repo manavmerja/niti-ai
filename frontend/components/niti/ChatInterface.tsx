@@ -45,7 +45,7 @@ export default function ChatInterface() {
 
     try {
       // NOTE: Abhi ke liye ye URL dummy hai, jab backend fix hoga tab chalega
-      const res = await fetch("https://niti-ai.onrender.com/chat", {
+      const res = await fetch("https://niti-backend.onrender.com/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: userMsg.content }),
@@ -148,7 +148,7 @@ export default function ChatInterface() {
                     <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.content}</p>
                   )}
                 </div>
-                
+
               </motion.div>
             ))}
           </AnimatePresence>
