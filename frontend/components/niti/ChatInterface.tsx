@@ -1,6 +1,6 @@
 "use client"
 
-
+import { toast } from "sonner" 
 import { CopyButton } from "../ui/copy-button" 
 import TextareaAutosize from "react-textarea-autosize" // <-- NEW IMPORT
 import React, { useState, useRef, useEffect } from "react"
@@ -38,38 +38,45 @@ export default function ChatInterface() {
   const handleSend = async () => {
     if (!input.trim()) return
 
+    // User Message Add
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: input }
     setMessages((prev) => [...prev, userMsg])
     setInput("")
-    setIsLoading(true)
+    setIsLoading(true) // Loader Start
 
     try {
-      // NOTE: Abhi ke liye ye URL dummy hai, jab backend fix hoga tab chalega
-      const res = await fetch("https://niti-backend.onrender.com/chat", {
+      const BACKEND_URL = "https://niti-backend.onrender.com/chat" // URL check kar lena
+      
+      const res = await fetch(BACKEND_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: userMsg.content }),
       })
 
+      if (!res.ok) throw new Error("Server Error")
+
       const data = await res.json()
+      
+      // Loader Stop PEHLE karenge, fir message dikhayenge
+      setIsLoading(false) 
+
       const aiMsg: Message = { 
         id: (Date.now() + 1).toString(), 
         role: "ai", 
-        content: data.response || "Sorry, server response empty." 
+        content: data.response 
       }
       setMessages((prev) => [...prev, aiMsg])
-   } catch (error) {
-      console.error("Error:", error)
-      setMessages((prev) => [
-        ...prev, 
-        { 
-          id: Date.now().toString(), // <-- UNIQUE ID (Zaruri hai)
-          role: "ai", 
-          content: "⚠️ Connection failed. Server is unreachable." 
-        }
-      ])
+
+    } catch (error) {
+      console.error(error)
+      setIsLoading(false) // Error aate hi loader band
+      
+      // Chat me ganda error message dikhane ki jagah Sundar Toast dikhao
+      toast.error("Connection Failed", {
+        description: "Please check your internet or try again later.",
+      })
+    }
   }
-}
 
   // Handle Enter Key (Smart Logic)
   const handleKeyDown = (e: React.KeyboardEvent) => {
