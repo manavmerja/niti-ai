@@ -1,7 +1,7 @@
 "use client"
 
-import { useRouter } from "next/navigation" // <-- NEW IMPORT
-import { useUser, SignInButton } from "@clerk/nextjs" // <-- Clerk Hooks
+import { useUser } from "@clerk/nextjs"
+import { useRouter } from "next/navigation" // <-- ROUTER IMPORT
 import { toast } from "sonner" 
 import { CopyButton } from "../ui/copy-button" 
 import TextareaAutosize from "react-textarea-autosize"
@@ -10,7 +10,6 @@ import { MarkdownRenderer } from "../ui/markdown-renderer"
 import SuggestionChips from "../chat/SuggestionChips"
 import { Send, Sparkles, User, Bot, Loader2 } from "lucide-react"
 import { Button } from "../ui/button"
-import { Input } from "../ui/input"
 import { ScrollArea } from "../ui/scroll-area"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
@@ -22,8 +21,8 @@ type Message = {
 }
 
 export default function ChatInterface() {
-  const { isSignedIn } = useUser() // <-- Check login status
-  const router = useRouter() // <-- NEW
+  const { isSignedIn } = useUser()
+  const router = useRouter() // <-- ROUTER INITIALIZE
   
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -43,27 +42,25 @@ export default function ChatInterface() {
   const handleSend = async () => {
     if (!input.trim()) return
 
-    // --- GUEST WARNING LOGIC ---
-    // Agar user Guest hai aur ye pehla message hai, toh warn karo
+    // --- GUEST WARNING (Direct Redirect) ---
     if (!isSignedIn && messages.length === 1) { 
        toast.info("Chats are not saved!", {
          description: "You are chatting as a Guest. Sign in to save history.",
          action: {
            label: "Sign In",
-           onClick: () => router.push('/sign-in')
+           // Popup nahi, Page Redirect 👇
+           onClick: () => router.push('/sign-in') 
          }
        })
      }
 
-    // User Message Add
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: input }
     setMessages((prev) => [...prev, userMsg])
     setInput("")
     setIsLoading(true)
 
     try {
-      // Backend URL (Make sure ye sahi hai)
-      const BACKEND_URL = "https://niti-backend.onrender.com/chat" 
+      const BACKEND_URL = "https://niti-backend.onrender.com/chat"
       
       const res = await fetch(BACKEND_URL, {
         method: "POST",
@@ -74,7 +71,6 @@ export default function ChatInterface() {
       if (!res.ok) throw new Error("Server Error")
 
       const data = await res.json()
-      
       setIsLoading(false) 
 
       const aiMsg: Message = { 
@@ -87,14 +83,12 @@ export default function ChatInterface() {
     } catch (error) {
       console.error(error)
       setIsLoading(false)
-      
       toast.error("Connection Failed", {
         description: "Please check your internet or try again later.",
       })
     }
   }
 
-  // Handle Enter Key
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
@@ -104,12 +98,9 @@ export default function ChatInterface() {
 
   return (
     <div className="flex flex-col h-full w-full mx-auto relative">
-      
-      {/* --- CHAT SCROLL AREA --- */}
       <ScrollArea className="flex-1 p-4 pb-32">
         <div className="max-w-4xl mx-auto space-y-6">
           
-          {/* Greeting State */}
           {messages.length === 1 && (
             <div className="flex flex-col items-center justify-center py-10 space-y-8 mt-10">
                <motion.div 
@@ -117,7 +108,14 @@ export default function ChatInterface() {
                  animate={{ scale: 1, opacity: 1 }}
                  className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/20"
                >
-                 <Image src="/niti-photo.webp" alt="Logo" fill className="object-cover" priority />
+                 <Image 
+                    src="/niti-photo.webp" 
+                    alt="Logo" 
+                    fill 
+                    className="object-cover" 
+                    priority 
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
                </motion.div>
                <div className="text-center space-y-2">
                  <h2 className="text-2xl font-bold tracking-tight">How can I help you today?</h2>
@@ -130,7 +128,6 @@ export default function ChatInterface() {
             </div>
           )}
 
-          {/* Messages List */}
           <AnimatePresence mode="popLayout">
             {messages.length > 1 && messages.map((m) => (
               <motion.div
@@ -169,27 +166,25 @@ export default function ChatInterface() {
             ))}
           </AnimatePresence>
 
-          {/* --- PULSING BRAIN LOADER --- */}
+          {/* CLEAN PULSING LOADER */}
           {isLoading && (
             <motion.div 
               initial={{ opacity: 0, y: 10 }} 
               animate={{ opacity: 1, y: 0 }} 
-              className="flex items-start gap-4"
+              className="flex items-center gap-4 py-4"
             >
               <motion.div
                 animate={{ 
-                  scale: [1, 1.1, 1],
-                  opacity: [0.8, 1, 0.8],
-                  boxShadow: ["0px 0px 0px rgba(59, 130, 246, 0)", "0px 0px 20px rgba(59, 130, 246, 0.6)", "0px 0px 0px rgba(59, 130, 246, 0)"]
+                  boxShadow: ["0px 0px 0px rgba(59, 130, 246, 0)", "0px 0px 15px rgba(59, 130, 246, 0.5)", "0px 0px 0px rgba(59, 130, 246, 0)"]
                 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="relative w-10 h-10 rounded-xl overflow-hidden border border-blue-500/30 bg-background"
+                transition={{ duration: 2, repeat: Infinity }}
+                className="relative w-8 h-8 rounded-lg overflow-hidden bg-background border border-niti-blue/30"
               >
-                <Image src="/niti-photo.webp" alt="Thinking..." fill className="object-cover" />
+                <Image src="/niti-photo.webp" alt="Thinking..." fill className="object-cover" sizes="32px" />
               </motion.div>
-              <div className="flex flex-col justify-center h-10 space-y-1">
-                <span className="text-sm font-medium text-niti-blue animate-pulse">Analyzing Schemes...</span>
-                <span className="text-[10px] text-muted-foreground">Checking database for best answers</span>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium text-foreground animate-pulse">Niti is thinking...</span>
+                <span className="text-[10px] text-muted-foreground">Analyzing government database</span>
               </div>
             </motion.div>
           )}
@@ -198,7 +193,6 @@ export default function ChatInterface() {
         </div>
       </ScrollArea>
 
-      {/* --- INPUT AREA --- */}
       <div className="absolute bottom-6 left-0 right-0 px-4">
         <div className="max-w-4xl mx-auto relative flex items-end gap-2 bg-card/80 backdrop-blur-xl p-2 rounded-[26px] shadow-2xl border border-border/40">
           <TextareaAutosize
@@ -224,7 +218,9 @@ export default function ChatInterface() {
           Niti.ai can make mistakes. Always check official govt sources.
         </p>
       </div>
-      
+
+      {/* HIDDEN BUTTON DELETE HO GAYA HAI */}
+
     </div>
   )
 }

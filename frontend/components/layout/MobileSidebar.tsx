@@ -1,16 +1,17 @@
 "use client"
-import Link from "next/link" // <-- NEW IMPORT
+
 import { Menu, Plus, MessageSquare, Info, LogIn, LogOut } from "lucide-react"
 import { Button } from "../ui/button"
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "../ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "../ui/sheet"
 import Image from "next/image"
 import { AboutDialog } from "../niti/AboutDialog"
-// Clerk Imports (Auth ke liye)
-import { SignedIn, SignedOut, SignInButton, UserButton, useUser, useClerk } from "@clerk/nextjs"
+import Link from "next/link" // <-- LINK IMPORT KIYA
+// Clerk Imports
+import { SignedIn, SignedOut, UserButton, useUser, useClerk } from "@clerk/nextjs"
 
 export default function MobileSidebar() {
-  const { user } = useUser(); // User ka data lene ke liye
-  const { signOut } = useClerk(); // <-- Sign Out function yahan se milega
+  const { user } = useUser();
+  const { signOut } = useClerk();
 
   return (
     <Sheet>
@@ -26,7 +27,11 @@ export default function MobileSidebar() {
         <div className="p-6 border-b border-border/50">
           <div className="flex items-center gap-3">
             
-            {/* AGAR LOGGED IN HAI: Profile Dikhao */}
+            {/* Accessibility Description (Hidden) */}
+            <SheetDescription className="hidden">
+              Navigation menu for accessing chats and settings.
+            </SheetDescription>
+            
             <SignedIn>
                <div className="scale-125">
                  <UserButton afterSignOutUrl="/" />
@@ -37,7 +42,6 @@ export default function MobileSidebar() {
                </div>
             </SignedIn>
 
-            {/* AGAR GUEST HAI: Logo Dikhao */}
             <SignedOut>
               <div className="relative w-8 h-8 rounded-lg overflow-hidden">
                  <Image src="/niti-photo.webp" alt="Niti Logo" width={32} height={32} className="object-cover" />
@@ -57,17 +61,15 @@ export default function MobileSidebar() {
                 <Plus size={18} /> New Chat
             </Button>
 
-            {/* HISTORY SECTION */}
             <div className="flex flex-col gap-1 mt-2">
                 <p className="text-xs text-muted-foreground font-semibold px-2 mb-2 uppercase tracking-wider">Recent</p>
                 
                 <SignedIn>
-                  {/* Saved Chat Button */}
                   <Button variant="ghost" className="justify-start gap-2 h-10 px-2 font-normal text-muted-foreground hover:text-foreground hover:bg-muted/50">
                       <MessageSquare size={16} /> My Saved Chat...
                   </Button>
                   
-                  {/* --- NEW LOGOUT BUTTON (FIXED) --- */}
+                  {/* LOGOUT BUTTON */}
                   <Button 
                       variant="ghost" 
                       onClick={() => signOut({ redirectUrl: '/' })}
@@ -78,14 +80,17 @@ export default function MobileSidebar() {
                 </SignedIn>
 
                 <SignedOut>
-                   {/* Guest ke liye Warning Box */}
+                   {/* GUEST WARNING BOX */}
                    <div className="px-2 py-4 text-center border border-dashed border-border rounded-lg bg-muted/20">
                       <p className="text-xs text-muted-foreground mb-2">Sign in to save your chat history.</p>
-                     <Link href="/sign-in" className="w-full">
-                         <Button variant="outline" size="sm" className="w-full gap-2">
-                             <LogIn size={14} /> Sign In
-                         </Button>  
-                     </Link>
+                      
+                      {/* --- FIX: POPUP HATA KAR LINK LAGA DIYA --- */}
+                      <Link href="/sign-in" className="w-full block">
+                        <Button variant="outline" size="sm" className="w-full gap-2">
+                           <LogIn size={14} /> Sign In
+                        </Button>
+                      </Link>
+
                    </div>
                 </SignedOut>
             </div>
@@ -94,10 +99,7 @@ export default function MobileSidebar() {
         {/* --- FOOTER --- */}
         <div className="p-4 bg-muted/20 border-t border-border/50">
             <AboutDialog>
-                <Button 
-                    variant="ghost" 
-                    className="w-full justify-start gap-3 h-auto py-3 hover:bg-background transition-all group px-2"
-                >
+                <Button variant="ghost" className="w-full justify-start gap-3 h-auto py-3 hover:bg-background transition-all group px-2">
                     <div className="w-9 h-9 rounded-full bg-niti-blue/10 flex items-center justify-center text-niti-blue group-hover:bg-niti-blue group-hover:text-white transition-colors">
                         <Info size={18} />
                     </div>
