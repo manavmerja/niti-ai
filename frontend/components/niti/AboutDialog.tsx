@@ -70,9 +70,9 @@ export function AboutDialog({ children }: { children: React.ReactNode }) {
             <Button className="w-full gap-2 bg-niti-blue hover:bg-blue-600 text-white">
                 <Github size={16} /> View on GitHub
             </Button>
-            <p className="text-[10px] text-center text-muted-foreground flex items-center justify-center gap-1 mt-2">
-                Made with <Heart size={10} className="text-red-500 fill-red-500" /> in India
-            </p>
+            {/* <p className="text-[10px] text-center text-muted-foreground flex items-center justify-center gap-1 mt-2">
+                Made within India
+            </p> */}
         </div>
       </DialogContent>
     </Dialog>

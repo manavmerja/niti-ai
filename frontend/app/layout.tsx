@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "../components/theme-provider";
+import MainLayout from "@/components/layout/MainLayout";
+import { ClerkProvider } from "@clerk/nextjs"; 
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Niti.ai",
-  description: "Your Govt Schemes Assistant",
+  description: "AI Assistant for Indian Government Schemes",
 };
 
 export default function RootLayout({
@@ -16,18 +17,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        {/* Wrap everything in ThemeProvider */}
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark" // Default Dark rakhenge kyuki wo cool lagta hai
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body className={inter.className}>
+          <MainLayout>
+            {children}
+          </MainLayout>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
