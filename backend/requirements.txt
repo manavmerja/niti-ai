@@ -4,24 +4,13 @@ flask-cors
 gunicorn
 python-dotenv
 
-# --- AI & LangChain ---
+# --- AI & LangChain (Google Only - Lightweight) ---
 langchain-google-genai
-langchain-groq
-langchain-huggingface
 langchain-community
 langchain-core
-sentence-transformers
-
-# --- Database ---
-supabase
+chromadb
 
 # --- Utilities ---
 httpx
 pypdf
 
-# --- Optional (Purane) ---
-fastapi
-uvicorn
-crewai
-crewai-tools
-litellm

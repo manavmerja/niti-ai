@@ -1,114 +1,74 @@
 import os
 from dotenv import load_dotenv
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+from langchain_community.vectorstores import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
-# LangChain Imports
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_groq import ChatGroq
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_core.documents import Document 
-from supabase import create_client
+# Environment Variables Load
+load_dotenv()
 
-# Load Env
-load_dotenv() 
+# --- 1. SETUP GOOGLE EMBEDDINGS (Lightweight & Fast) ---
+# HuggingFace (Heavy) ki jagah Google (Cloud) use kar rahe hain
+embeddings = GoogleGenerativeAIEmbeddings(
+    model="models/embedding-004", 
+    google_api_key=os.getenv("GOOGLE_API_KEY")
+)
 
-# --- SETUP DATABASE ---
-supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_KEY")
-supabase_client = create_client(supabase_url, supabase_key)
+# --- 2. VECTOR STORE SETUP ---
+# Persist directory wahi rakhenge
+PERSIST_DIRECTORY = "./chroma_db"
 
-print("🧠 Loading AI Brain (Multilingual)...")
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-
-def get_rag_response(query):
+def get_rag_response(query_text):
     try:
-        # ---------------------------------------------------------
-        # 1. DATABASE SEARCH
-        # ---------------------------------------------------------
-        print(f"🔎 Searching Database for: {query}")
-        
-        query_embedding = embeddings.embed_query(query)
-        
-        params = {
-            "query_embedding": query_embedding,
-            "match_threshold": 0.5, 
-            "match_count": 4
-        }
-        
-        rpc_response = supabase_client.rpc("match_documents", params).execute()
-        
-        matched_docs = []
-        if rpc_response.data:
-            for item in rpc_response.data:
-                content = item.get("content")
-                metadata = item.get("metadata", {})
-                doc = Document(page_content=content, metadata=metadata)
-                matched_docs.append(doc)
-                
-        context_text = ""
-        sources = set()
+        # Check if DB exists
+        if not os.path.exists(PERSIST_DIRECTORY):
+            return "⚠️ Database not found. Please run 'ingest.py' first to create the knowledge base."
 
-        if matched_docs:
-            for doc in matched_docs:
-                context_text += doc.page_content + "\n\n"
-                source_name = doc.metadata.get('source', 'Unknown Document')
-                sources.add(source_name)
-                print(f"🕵️ DEBUG: Found doc from source: {source_name}")
-        else:
-            context_text = "No specific document found."
-
-        source_list = ", ".join(sources)
-
-        # ---------------------------------------------------------
-        # 2. PROMPT
-        # ---------------------------------------------------------
-        prompt = f"""
-        You are Niti.ai, an intelligent assistant for Indian Government Schemes.
+        # Load Database
+        vectorstore = Chroma(
+            persist_directory=PERSIST_DIRECTORY, 
+            embedding_function=embeddings
+        )
         
-        ### INSTRUCTIONS:
-        1. **Primary Source:** Answer the user's question using the **CONTEXT** provided below.
-        2. **Citation:** At the very end of your answer, explicitly mention: "Source: {source_list}"
-        3. **Official Link:** Display the Official Link found in the context.
-        4. **Format:** Use clear Bullet points.
-        
-        ### CONTEXT (Official Data):
-        {context_text}
-        
-        ### USER QUESTION:
-        {query}
-        """
+        # Create Retriever (Search top 3 relevant chunks)
+        retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
-        # ---------------------------------------------------------
-        # 3. HYBRID AI EXECUTION
-        # ---------------------------------------------------------
-        try:
-            # PRIORITY 1: GEMINI
-            print("🤖 Trying Primary Model: Gemini 2.0 Flash...")
-            llm = ChatGoogleGenerativeAI(
-                model="gemini-2.0-flash", 
-                temperature=0.3,
-                api_key=os.getenv("GOOGLE_API_KEY")
-            )
-            response = llm.invoke(prompt)
-            return response.content
+        # --- 3. DEFINE LLM (Gemini Pro) ---
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-1.5-flash",  # Fast model
+            temperature=0.3,
+            google_api_key=os.getenv("GOOGLE_API_KEY")
+        )
 
-        except Exception as gemini_error:
-            print(f"⚠️ Gemini Failed (Quota/Error): {gemini_error}")
-            print("🔄 Switching to Backup Model: Groq (Llama-3.1)...")
-            
-            # PRIORITY 2: GROQ (UPDATED MODEL NAME)
-            try:
-                llm_backup = ChatGroq(
-                    # 👇 YAHAN CHANGE KIYA HAI: Naya Model Name
-                    model_name="llama-3.1-8b-instant",
-                    temperature=0.3,
-                    api_key=os.getenv("GROQ_API_KEY")
-                )
-                response = llm_backup.invoke(prompt)
-                return response.content
-            except Exception as groq_error:
-                print(f"❌ Groq also failed: {groq_error}")
-                return "⚠️ Sorry, server is overloaded. Please try again later."
+        # --- 4. PROMPT TEMPLATE ---
+        template = """You are Niti.ai, an expert on Indian Government Schemes.
+        Use the following pieces of context to answer the question at the end.
+        If the answer is not in the context, just say "I don't have specific info on this in my database" but try to help generally.
+        Keep the answer helpful, structured (use bullet points), and professional.
+
+        Context:
+        {context}
+
+        Question: {question}
+
+        Answer:"""
         
+        custom_rag_prompt = ChatPromptTemplate.from_template(template)
+
+        # --- 5. CHAIN ---
+        rag_chain = (
+            {"context": retriever, "question": RunnablePassthrough()}
+            | custom_rag_prompt
+            | llm
+            | StrOutputParser()
+        )
+
+        # Run Chain
+        response = rag_chain.invoke(query_text)
+        return response
+
     except Exception as e:
-        print(f"❌ System Error: {e}")
-        return "⚠️ Internal Server Error."
+        print(f"Error in RAG Service: {str(e)}")
+        return "⚠️ Sorry, I encountered an error while searching the database."
