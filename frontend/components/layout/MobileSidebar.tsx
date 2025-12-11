@@ -1,18 +1,16 @@
 "use client"
 
-
-import { Menu, Plus, MessageSquare, Info, LogIn } from "lucide-react"
+import { Menu, Plus, MessageSquare, Info, LogIn, LogOut } from "lucide-react"
 import { Button } from "../ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "../ui/sheet"
 import Image from "next/image"
 import { AboutDialog } from "../niti/AboutDialog"
-import { LogOut } from "lucide-react" // New Icon
 // Clerk Imports (Auth ke liye)
-import { SignedIn, SignedOut, SignInButton, useClerk, UserButton, useUser } from "@clerk/nextjs"
+import { SignedIn, SignedOut, SignInButton, UserButton, useUser, useClerk } from "@clerk/nextjs"
 
 export default function MobileSidebar() {
   const { user } = useUser(); // User ka data lene ke liye
-  const { signOut } = useClerk(); // signOut function
+  const { signOut } = useClerk(); // <-- Sign Out function yahan se milega
 
   return (
     <Sheet>
@@ -24,7 +22,7 @@ export default function MobileSidebar() {
 
       <SheetContent side="left" className="w-[300px] sm:w-[350px] bg-card border-r border-border/50 p-0 flex flex-col gap-0">
         
-        {/* --- HEADER (User Profile / Logo) --- */}
+        {/* --- HEADER --- */}
         <div className="p-6 border-b border-border/50">
           <div className="flex items-center gap-3">
             
@@ -64,19 +62,20 @@ export default function MobileSidebar() {
                 <p className="text-xs text-muted-foreground font-semibold px-2 mb-2 uppercase tracking-wider">Recent</p>
                 
                 <SignedIn>
-    {/* Saved Chat Button */}
-    <Button variant="ghost" className="justify-start gap-2 h-10 px-2 font-normal text-muted-foreground hover:text-foreground hover:bg-muted/50">
-        <MessageSquare size={16} /> My Saved Chat...
-    </Button>
-
-    {/* --- NEW LOGOUT BUTTON --- */}
-    <Button 
-        variant="ghost" 
-        onClick={() => signOut({ redirectUrl: '/' })}
-        className="justify-start gap-2 h-10 px-2 font-normal text-red-400 hover:text-red-500 hover:bg-red-500/10 mt-2">
-                         <LogOut size={16} /> Sign Out
-                   </Button>
-              </SignedIn>
+                  {/* Saved Chat Button */}
+                  <Button variant="ghost" className="justify-start gap-2 h-10 px-2 font-normal text-muted-foreground hover:text-foreground hover:bg-muted/50">
+                      <MessageSquare size={16} /> My Saved Chat...
+                  </Button>
+                  
+                  {/* --- NEW LOGOUT BUTTON (FIXED) --- */}
+                  <Button 
+                      variant="ghost" 
+                      onClick={() => signOut({ redirectUrl: '/' })}
+                      className="justify-start gap-2 h-10 px-2 font-normal text-red-400 hover:text-red-500 hover:bg-red-500/10 mt-2"
+                  >
+                      <LogOut size={16} /> Sign Out
+                  </Button>
+                </SignedIn>
 
                 <SignedOut>
                    {/* Guest ke liye Warning Box */}
@@ -104,7 +103,7 @@ export default function MobileSidebar() {
                     </div>
                     <div className="flex flex-col items-start text-left">
                         <span className="font-medium text-sm">About Niti.ai</span>
-                        <span className="text-[10px] text-muted-foreground">v1.0 • Made By Manav Merja</span>
+                        <span className="text-[10px] text-muted-foreground">v1.0 • Made with ❤️ in India</span>
                     </div>
                 </Button>
             </AboutDialog>
