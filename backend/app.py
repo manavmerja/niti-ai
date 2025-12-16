@@ -5,7 +5,10 @@ import json
 from dotenv import load_dotenv
 from services.rag_service import get_rag_response
 
-# --- ZYND IMPORT ---
+# --- 1. SUPABASE IMPORT (New) ---
+from supabase import create_client, Client
+
+# --- 2. ZYND IMPORT (Old) ---
 try:
     from zyndai_agent.agent import ZyndAIAgent, AgentConfig
     zynd_available = True
@@ -21,15 +24,29 @@ app = Flask(__name__)
 # --- CORS SETTING ---
 CORS(app, resources={r"/*": {"origins": "*"}}) 
 
-# --- ZYND AGENT SETUP ---
+# --- 3. SUPABASE SETUP (Database Connection) ---
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+supabase: Client = None
+
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        print("✅ Supabase Connected!")
+    except Exception as e:
+        print(f"⚠️ Supabase Init Failed: {e}")
+else:
+    print("ℹ️ Supabase Credentials missing in .env (Chat won't be saved)")
+
+
+# --- 4. ZYND AGENT SETUP (Your Existing Logic) ---
 niti_agent = None
 
 if zynd_available:
     try:
-        # 1. Credentials Setup
         cred_file = "zynd_credentials.json"
         
-        # Fake Identity logic wahi purani wali
+        # Fake Identity Create
         fake_credential_data = {
             "@context": ["https://www.w3.org/2018/credentials/v1"],
             "id": "urn:uuid:12345678-1234-1234-1234-123456789abc",
@@ -39,38 +56,29 @@ if zynd_available:
             "credentialSubject": { "id": "did:web:zynd.network:niti-ai", "name": "Niti.ai" }
         }
 
-        # File write karo (Overwrite mode)
         with open(cred_file, "w") as f:
             json.dump(fake_credential_data, f, indent=2)
 
-        # 2. Config Box 
-        # FIX 1: Port hataya taaki library khud default (int) use kare
         dummy_seed = "0000000000000000000000000000000000000000000000000000000000000001"
         
         config = AgentConfig(
-            mqtt_broker_url="mqtt://test.mosquitto.org", # <-- :1883 hata diya
+            mqtt_broker_url="mqtt://test.mosquitto.org",
             registry_url="http://localhost:3002",
             secret_seed=dummy_seed,
             identity_credential_path=cred_file
         )
         
-        # 3. Connect Agent
         print("⏳ Connecting to ZYND Network...")
         niti_agent = ZyndAIAgent(agent_config=config)
         print("🚀 Niti.ai is now connected to ZYND Protocol!")
 
     except Exception as e:
         error_msg = str(e)
-        # FIX 2: Smart Handling
-        # Agar registry ne 'Success' (200) diya par library ne format error mara,
-        # Toh hum use SUCCESS hi manenge.
+        # Smart Error Handling for ZYND
         if "Failed to update agent connection info" in error_msg:
              print("🚀 Niti.ai Connected! (Registry acknowledged with warnings)")
-             # Error ke bawajood agent object ban chuka hota hai usually, 
-             # par agar nahi, toh hum fake object bana denge taaki chat na ruke
              if niti_agent is None:
                  print("ℹ️ Running in Soft-Connected Mode")
-                 # Ek dummy object taaki 'log_activity' call ho sake
                  class DummyAgent:
                      def log_activity(self, user_query, agent_response):
                          print(f"📡 (Soft-Log) Sent to ZYND: {user_query[:20]}...")
@@ -83,10 +91,13 @@ if zynd_available:
 
 @app.route("/", methods=["GET"])
 def home():
-    status = "Connected to ZYND" if niti_agent else "Standalone Mode"
+    status = []
+    if niti_agent: status.append("ZYND Connected")
+    if supabase: status.append("Database Connected")
+    
     return jsonify({
         "message": "Niti.ai Backend is Live! 🚀", 
-        "zynd_status": status
+        "status": ", ".join(status) if status else "Standalone Mode"
     })
 
 @app.route("/chat", methods=["POST", "OPTIONS"])
@@ -97,17 +108,38 @@ def chat():
     try:
         data = request.json
         user_query = data.get("text", "")
+        # Session ID (Frontend se aana chahiye, abhi default 'guest')
+        session_id = data.get("session_id", "guest_user")
         
         if not user_query:
             return jsonify({"error": "No text provided"}), 400
             
-        # 1. AI Response
+        # 1. AI Response (RAG)
         response_text = get_rag_response(user_query)
         
-        # 2. ZYND Log
+        # 2. SAVE TO SUPABASE (New Logic) 💾
+        if supabase:
+            try:
+                # Save User Query
+                supabase.table("chat_history").insert({
+                    "role": "user",
+                    "content": user_query,
+                    "session_id": session_id
+                }).execute()
+                
+                # Save AI Response
+                supabase.table("chat_history").insert({
+                    "role": "ai",
+                    "content": response_text,
+                    "session_id": session_id
+                }).execute()
+                print("💾 Chat saved to DB")
+            except Exception as db_err:
+                print(f"⚠️ DB Save Failed: {db_err}")
+
+        # 3. ZYND Log Activity (Existing Logic) 📡
         if niti_agent:
             try:
-                # Safe logging
                 if hasattr(niti_agent, 'log_activity'):
                     niti_agent.log_activity(user_query=user_query, agent_response=response_text)
                     print("📡 Activity logged to ZYND Network")
