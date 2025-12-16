@@ -100,57 +100,29 @@ def home():
         "status": ", ".join(status) if status else "Standalone Mode"
     })
 
-@app.route("/chat", methods=["POST", "OPTIONS"])
-def chat():
-    if request.method == "OPTIONS":
-        return _build_cors_preflight_response()
-    
+# --- NEW ROUTE: Get Chat History ---
+@app.route("/history", methods=["GET"])
+def get_history():
     try:
-        data = request.json
-        user_query = data.get("text", "")
-        # Session ID (Frontend se aana chahiye, abhi default 'guest')
-        session_id = data.get("session_id", "guest_user")
-        
-        if not user_query:
-            return jsonify({"error": "No text provided"}), 400
-            
-        # 1. AI Response (RAG)
-        response_text = get_rag_response(user_query)
-        
-        # 2. SAVE TO SUPABASE (New Logic) 💾
+        session_id = request.args.get("session_id")
+        if not session_id:
+            return jsonify([])
+
         if supabase:
-            try:
-                # Save User Query
-                supabase.table("chat_history").insert({
-                    "role": "user",
-                    "content": user_query,
-                    "session_id": session_id
-                }).execute()
-                
-                # Save AI Response
-                supabase.table("chat_history").insert({
-                    "role": "ai",
-                    "content": response_text,
-                    "session_id": session_id
-                }).execute()
-                print("💾 Chat saved to DB")
-            except Exception as db_err:
-                print(f"⚠️ DB Save Failed: {db_err}")
-
-        # 3. ZYND Log Activity (Existing Logic) 📡
-        if niti_agent:
-            try:
-                if hasattr(niti_agent, 'log_activity'):
-                    niti_agent.log_activity(user_query=user_query, agent_response=response_text)
-                    print("📡 Activity logged to ZYND Network")
-            except Exception:
-                pass 
-
-        return jsonify({"response": response_text})
-    
+            # Sirf 'user' ke messages layenge taaki sidebar me dikha sake (Last 10)
+            response = supabase.table("chat_history")\
+                .select("*")\
+                .eq("session_id", session_id)\
+                .eq("role", "user")\
+                .order("created_at", desc=True)\
+                .limit(10)\
+                .execute()
+            return jsonify(response.data)
+        else:
+            return jsonify([])
     except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"response": "⚠️ Internal Server Error"}), 500
+        print(f"History Error: {e}")
+        return jsonify([])
 
 def _build_cors_preflight_response():
     response = jsonify({})

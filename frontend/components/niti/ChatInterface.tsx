@@ -14,6 +14,7 @@ import { ScrollArea } from "../ui/scroll-area"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 
+
 type Message = {
   id: string
   role: "user" | "ai"
@@ -34,6 +35,8 @@ export default function ChatInterface() {
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  const { user } = useUser()
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -61,11 +64,13 @@ export default function ChatInterface() {
 
     try {
       const BACKEND_URL = "https://niti-backend.onrender.com/chat"
+
+      const sessionId = user?.id || "guest_user";
       
       const res = await fetch(BACKEND_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: userMsg.content }),
+        body: JSON.stringify({ text: userMsg.content, session_id: sessionId }),
       })
 
       if (!res.ok) throw new Error("Server Error")
