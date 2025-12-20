@@ -63,7 +63,10 @@ export default function ChatInterface() {
     setIsLoading(true)
 
     try {
-      const BACKEND_URL = "https://niti-backend.onrender.com/chat"
+      // ✅ FIX: Use Environment Variable OR Fallback to Localhost
+      // Ye ab .env.local se URL uthayega (http://localhost:10000)
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:10000";
+      const BACKEND_URL = `${API_BASE_URL}/chat`;
 
       const sessionId = user?.id || "guest_user";
       
@@ -86,7 +89,7 @@ export default function ChatInterface() {
       setMessages((prev) => [...prev, aiMsg])
 
     } catch (error) {
-      console.error(error)
+      console.error(error) // Ab ye console me error dikhayega
       setIsLoading(false)
       toast.error("Connection Failed", {
         description: "Please check your internet or try again later.",
