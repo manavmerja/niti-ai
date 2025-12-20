@@ -2,8 +2,12 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client
 from langchain_community.vectorstores import SupabaseVectorStore
-from langchain_huggingface import HuggingFaceEmbeddings
+# Cloud Embeddings (Lightweight)
+from langchain_huggingface import HuggingFaceInferenceAPIEmbeddings
+# LLMs
 from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
+# Prompts & Chains
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
@@ -15,7 +19,11 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# Lightweight Cloud Embeddings
+embeddings = HuggingFaceInferenceAPIEmbeddings(
+    api_key=os.getenv("HUGGINGFACEHUB_API_TOKEN"), 
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
 
 vector_store = SupabaseVectorStore(
     client=supabase,
@@ -26,28 +34,12 @@ vector_store = SupabaseVectorStore(
 
 def get_rag_response(query_text):
     try:
-        # --- DEBUG MODE: Pehle dekhte hain DB se kya aa raha hai ---
-        print(f"\n🔍 Searching for: {query_text}")
-        docs = vector_store.similarity_search(query_text, k=6) # k=6 documents layenge
+        print(f"\n🔍 Searching via API for: {query_text}")
         
-        # Terminal me print karo ki kya mila
-        context_text = ""
-        for i, doc in enumerate(docs):
-            print(f"📄 Chunk {i+1}: {doc.page_content[:100]}...") # First 100 chars print honge
-            context_text += doc.page_content + "\n\n"
-
-        if not context_text:
-            print("❌ No matching documents found in DB!")
-            return "Sorry, I couldn't find any relevant data in my records."
-
-        # --- 2. SETUP LLM ---
-        llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
-            temperature=0.3,
-            api_key=os.getenv("GROQ_API_KEY")
-        )
-
-        # --- 3. PROMPT ---
+        # 1. RETRIEVER (Fetch Context)
+        retriever = vector_store.as_retriever(search_kwargs={"k": 6})
+        
+        # 2. PROMPT TEMPLATE
         template = """
         You are Niti.ai, an expert assistant for Indian Government Schemes and Charusat University.
         
@@ -59,21 +51,52 @@ def get_rag_response(query_text):
         Question: {question}
         
         Instructions:
-        1. Look closely for "Merit Scholarship", "CGPA", "Charusat" in the context.
-        2. If found, explain the criteria (CGPA 8.5/9.0) clearly.
+        1. Look specifically for "Charusat", "Merit Scholarship", "MYSY" details.
+        2. If found, explain the criteria clearly.
         3. If the answer is NOT in the context, say "I don't have that information."
         
         Answer:
         """
-        
         prompt = ChatPromptTemplate.from_template(template)
 
-        # --- 4. RUN CHAIN ---
-        chain = prompt | llm | StrOutputParser()
-        response = chain.invoke({"context": context_text, "question": query_text})
-        
-        return response
+        # 3. DEFINE MODELS
+        # Primary: Groq (Llama 3.3)
+        groq_llm = ChatGroq(
+            model="llama-3.3-70b-versatile",
+            temperature=0.3,
+            api_key=os.getenv("GROQ_API_KEY")
+        )
+
+        # Backup: Gemini (Flash 1.5)
+        gemini_llm = ChatGoogleGenerativeAI(
+            model="gemini-1.5-flash",
+            temperature=0.3,
+            google_api_key=os.getenv("GOOGLE_API_KEY")
+        )
+
+        # 4. EXECUTION LOGIC (The Switch)
+        try:
+            print("🤖 Trying Primary Model (Groq)...")
+            chain = (
+                {"context": retriever, "question": RunnablePassthrough()}
+                | prompt
+                | groq_llm
+                | StrOutputParser()
+            )
+            return chain.invoke(query_text)
+
+        except Exception as groq_error:
+            print(f"⚠️ Groq Failed: {groq_error}")
+            print("🔄 Switching to Backup Model (Gemini)...")
+            
+            chain = (
+                {"context": retriever, "question": RunnablePassthrough()}
+                | prompt
+                | gemini_llm  # <--- Using Gemini here
+                | StrOutputParser()
+            )
+            return chain.invoke(query_text)
 
     except Exception as e:
-        print(f"RAG Error: {str(e)}")
+        print(f"❌ RAG Critical Error: {str(e)}")
         return "⚠️ Sorry, I am facing a technical issue fetching the data."
