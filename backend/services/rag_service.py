@@ -2,8 +2,8 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client
 from langchain_community.vectorstores import SupabaseVectorStore
-# Cloud Embeddings (Lightweight)
-from langchain_huggingface import HuggingFaceInferenceAPIEmbeddings
+# ✅ FIX: Updated Import Name (New Library Version)
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 # LLMs
 from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -19,10 +19,11 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Lightweight Cloud Embeddings
-embeddings = HuggingFaceInferenceAPIEmbeddings(
-    api_key=os.getenv("HUGGINGFACEHUB_API_TOKEN"), 
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
+# ✅ FIX: Updated Class Name & Parameter
+# 'model' parameter use karein (purane me 'model_name' tha)
+embeddings = HuggingFaceEndpointEmbeddings(
+    model="sentence-transformers/all-MiniLM-L6-v2",
+    huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
 )
 
 vector_store = SupabaseVectorStore(
@@ -92,7 +93,7 @@ def get_rag_response(query_text):
             chain = (
                 {"context": retriever, "question": RunnablePassthrough()}
                 | prompt
-                | gemini_llm  # <--- Using Gemini here
+                | gemini_llm 
                 | StrOutputParser()
             )
             return chain.invoke(query_text)
