@@ -1,71 +1,79 @@
 import os
 from dotenv import load_dotenv
-# --- FIX: Correct Import ---
-from langchain_huggingface import HuggingFaceEndpointEmbeddings
+from supabase import create_client
+from langchain_community.vectorstores import SupabaseVectorStore
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
-from langchain_community.vectorstores import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 
 load_dotenv()
 
-# --- EMBEDDINGS (HuggingFace New Class) ---
-embeddings = HuggingFaceEndpointEmbeddings(
-    repo_id="sentence-transformers/all-MiniLM-L6-v2",
-    huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
-)
+# --- 1. SETUP DATABASE & EMBEDDINGS ---
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-PERSIST_DIRECTORY = "./chroma_db"
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+vector_store = SupabaseVectorStore(
+    client=supabase,
+    embedding=embeddings,
+    table_name="documents",
+    query_name="match_documents"
+)
 
 def get_rag_response(query_text):
     try:
-        if not os.path.exists(PERSIST_DIRECTORY):
-            return "⚠️ Database not found. Please run 'ingest.py' first."
-
-        vectorstore = Chroma(
-            persist_directory=PERSIST_DIRECTORY, 
-            embedding_function=embeddings
-        )
+        # --- DEBUG MODE: Pehle dekhte hain DB se kya aa raha hai ---
+        print(f"\n🔍 Searching for: {query_text}")
+        docs = vector_store.similarity_search(query_text, k=6) # k=6 documents layenge
         
-        retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+        # Terminal me print karo ki kya mila
+        context_text = ""
+        for i, doc in enumerate(docs):
+            print(f"📄 Chunk {i+1}: {doc.page_content[:100]}...") # First 100 chars print honge
+            context_text += doc.page_content + "\n\n"
 
-       # --- 2. LLM (GROQ - New Llama 3.3) ---
+        if not context_text:
+            print("❌ No matching documents found in DB!")
+            return "Sorry, I couldn't find any relevant data in my records."
+
+        # --- 2. SETUP LLM ---
         llm = ChatGroq(
-            model="llama-3.3-70b-versatile", # <-- NEW & POWERFUL
+            model="llama-3.3-70b-versatile",
             temperature=0.3,
             api_key=os.getenv("GROQ_API_KEY")
         )
 
+        # --- 3. PROMPT ---
         template = """
-         You are Niti.ai, an expert Indian Government Scheme assistant.
-        Use the following context to answer the user's question accurately.
-
-        RULES:
-        1. If the context contains a website URL, YOU MUST include it in the answer.
-        2. Format links in Markdown like this: [Click Here](https://website.com).
-        3. Do not simply say "visit the official website". Provide the clickable link.
-        4. If you don't know the answer, say "I don't have that information in my database."
-        5. Keep answers concise and point-wise using bullet points.
-
-        Context: {context}
+        You are Niti.ai, an expert assistant for Indian Government Schemes and Charusat University.
+        
+        Use the following context to answer the user's question.
+        
+        Context:
+        {context}
+        
         Question: {question}
-
+        
+        Instructions:
+        1. Look closely for "Merit Scholarship", "CGPA", "Charusat" in the context.
+        2. If found, explain the criteria (CGPA 8.5/9.0) clearly.
+        3. If the answer is NOT in the context, say "I don't have that information."
+        
         Answer:
         """
         
-        custom_rag_prompt = ChatPromptTemplate.from_template(template)
+        prompt = ChatPromptTemplate.from_template(template)
 
-        rag_chain = (
-            {"context": retriever, "question": RunnablePassthrough()}
-            | custom_rag_prompt
-            | llm
-            | StrOutputParser()
-        )
-
-        response = rag_chain.invoke(query_text)
+        # --- 4. RUN CHAIN ---
+        chain = prompt | llm | StrOutputParser()
+        response = chain.invoke({"context": context_text, "question": query_text})
+        
         return response
 
     except Exception as e:
-        print(f"Error in RAG Service: {str(e)}")
-        return f"⚠️ Server Error: {str(e)}"
+        print(f"RAG Error: {str(e)}")
+        return "⚠️ Sorry, I am facing a technical issue fetching the data."
