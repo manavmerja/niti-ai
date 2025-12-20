@@ -1,7 +1,8 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-from langchain_community.document_loaders import PyPDFLoader
+# ✅ ADDED: TextLoader import kiya
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import SupabaseVectorStore
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -21,7 +22,7 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 # 2. Setup Supabase Client
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 3. Define Embeddings
+# 3. Define Embeddings (Local - same as before)
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 # --- DATA SOURCE: HARDCODED RULES ---
@@ -41,52 +42,32 @@ TYPE: UNIVERSITY_SCHOLARSHIP
    - Benefit: 50% of Tuition Fees or Rs. 50,000 (whichever is less).
    - Eligibility: 80+ Percentile in 12th Standard.
    - Income Limit: Family income must be less than Rs. 6 Lakh/annum.
-
-3. Late Maniben Shankarbhai Patel Scholarship:
-   - For Pharmacy (RPCP) and Paramedical students.
-   - Based on financial need and merit.
-
-4. Urmil & Mayuri Desai Scholarship:
-   - Specifically for CSPIT (Chandubhai S. Patel Institute of Technology) students.
-   - Merit-cum-means based financial aid.
-
-5. Benevolent Fund (Jeetubhai Patel):
-   - Financial assistance for students whose guardian passes away during the course.
 """
 
 def ingest_data():
-    print("🚀 Starting Charusat Data Ingestion...")
+    print("🚀 Starting Data Ingestion (PDFs + Text + Web)...")
     documents = []
-
-    # --- PHASE 1: Process Hardcoded Knowledge ---
-    print("🔹 Processing Internal Knowledge Base...")
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    
+
+    # --- PHASE 1: Internal Knowledge Base ---
+    print("🔹 Processing Internal Knowledge Base...")
     docs = text_splitter.create_documents(
         [CHARUSAT_KNOWLEDGE_BASE], 
         metadatas=[{"source": "charusat_rules", "type": "hardcoded_rules"}]
     )
     documents.extend(docs)
 
-    # --- PHASE 2: Web Scraping (Browser Headers Added) ---
+    # --- PHASE 2: Web Scraping ---
     print("🔹 Scraping Charusat Website...")
     target_url = "https://www.charusat.ac.in/scholarship.php"
-    
-    # ✅ FIX: Adding Fake Browser Headers
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Referer": "https://www.google.com/"
+        "User-Agent": "Mozilla/5.0",
     }
-
     try:
-        response = requests.get(target_url, headers=headers, timeout=10) # <-- Headers added here
+        response = requests.get(target_url, headers=headers, timeout=10)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, "html.parser")
-            text_content = ""
-            for p in soup.find_all(['p', 'td', 'li']):
-                text_content += p.get_text() + "\n"
-            
+            text_content = soup.get_text()
             if text_content.strip():
                 web_docs = text_splitter.create_documents(
                     [text_content],
@@ -94,10 +75,6 @@ def ingest_data():
                 )
                 documents.extend(web_docs)
                 print(f"   ✅ Scraped {len(web_docs)} chunks from website.")
-            else:
-                print("   ⚠️ Website content was empty.")
-        else:
-            print(f"   ⚠️ Failed to fetch website: {response.status_code}")
     except Exception as e:
         print(f"   ⚠️ Scraping skipped: {e}")
 
@@ -120,10 +97,31 @@ def ingest_data():
                     print(f"   ✅ Extracted {len(pdf_chunks)} chunks.")
                 except Exception as e:
                     print(f"   ❌ Error reading PDF {filename}: {e}")
-    else:
-        print(f"ℹ️ PDF Directory {pdf_dir} not found. Skipping PDFs.")
 
-    # --- PHASE 4: Upload to Vector DB ---
+    # --- PHASE 4: Text File Ingestion (NEW ✅) ---
+    # Hum 'data' folder me direct check karenge .txt files ke liye
+    txt_dir = "data"
+    if os.path.exists(txt_dir):
+        print(f"🔹 Checking for Text (.txt) files in {txt_dir}...")
+        for filename in os.listdir(txt_dir):
+            if filename.endswith(".txt"):
+                file_path = os.path.join(txt_dir, filename)
+                print(f"   📝 Processing Text File: {filename}")
+                try:
+                    loader = TextLoader(file_path, encoding='utf-8')
+                    txt_docs = loader.load()
+                    txt_chunks = text_splitter.split_documents(txt_docs)
+                    
+                    for chunk in txt_chunks:
+                        chunk.metadata["source"] = "text_file"
+                        chunk.metadata["filename"] = filename
+                        
+                    documents.extend(txt_chunks)
+                    print(f"   ✅ Extracted {len(txt_chunks)} chunks.")
+                except Exception as e:
+                    print(f"   ❌ Error reading Text file {filename}: {e}")
+
+    # --- PHASE 5: Upload to Vector DB ---
     if documents:
         print(f"\n📦 Uploading {len(documents)} document chunks to Supabase Vector Store...")
         try:
@@ -134,7 +132,7 @@ def ingest_data():
                 query_name="match_documents"
             )
             vector_store.add_documents(documents)
-            print("🎉 SUCCESS: Charusat Data Ingested Successfully!")
+            print("🎉 SUCCESS: All Data Ingested Successfully!")
         except Exception as e:
             print(f"❌ Upload Failed: {e}")
     else:
