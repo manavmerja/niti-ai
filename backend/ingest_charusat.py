@@ -1,11 +1,11 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-# ✅ ADDED: TextLoader import kiya
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import SupabaseVectorStore
-from langchain_huggingface import HuggingFaceEmbeddings
+# ✅ Correct API Embeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_core.documents import Document
 from supabase import create_client
 from dotenv import load_dotenv
@@ -15,15 +15,23 @@ load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+HF_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise ValueError("❌ SUPABASE_URL or SUPABASE_KEY is missing in .env file")
 
+if not HF_TOKEN:
+    raise ValueError("❌ HUGGINGFACEHUB_API_TOKEN is missing. Add it to .env file.")
+
 # 2. Setup Supabase Client
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 3. Define Embeddings (Local - same as before)
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# 3. Define Embeddings (API Version - 384 Dimensions)
+print("🧠 Initializing HuggingFace Cloud Embeddings...")
+embeddings = HuggingFaceEndpointEmbeddings(
+    model="sentence-transformers/all-MiniLM-L6-v2",
+    huggingfacehub_api_token=HF_TOKEN
+)
 
 # --- DATA SOURCE: HARDCODED RULES ---
 CHARUSAT_KNOWLEDGE_BASE = """
@@ -45,7 +53,7 @@ TYPE: UNIVERSITY_SCHOLARSHIP
 """
 
 def ingest_data():
-    print("🚀 Starting Data Ingestion (PDFs + Text + Web)...")
+    print("🚀 Starting Data Ingestion via API (PDFs + Text + Web)...")
     documents = []
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 
@@ -60,9 +68,7 @@ def ingest_data():
     # --- PHASE 2: Web Scraping ---
     print("🔹 Scraping Charusat Website...")
     target_url = "https://www.charusat.ac.in/scholarship.php"
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-    }
+    headers = {"User-Agent": "Mozilla/5.0"}
     try:
         response = requests.get(target_url, headers=headers, timeout=10)
         if response.status_code == 200:
@@ -98,8 +104,7 @@ def ingest_data():
                 except Exception as e:
                     print(f"   ❌ Error reading PDF {filename}: {e}")
 
-    # --- PHASE 4: Text File Ingestion (NEW ✅) ---
-    # Hum 'data' folder me direct check karenge .txt files ke liye
+    # --- PHASE 4: Text File Ingestion ---
     txt_dir = "data"
     if os.path.exists(txt_dir):
         print(f"🔹 Checking for Text (.txt) files in {txt_dir}...")
@@ -124,6 +129,7 @@ def ingest_data():
     # --- PHASE 5: Upload to Vector DB ---
     if documents:
         print(f"\n📦 Uploading {len(documents)} document chunks to Supabase Vector Store...")
+        print("⏳ using Cloud API for Embeddings...")
         try:
             vector_store = SupabaseVectorStore(
                 client=supabase,
@@ -131,8 +137,16 @@ def ingest_data():
                 table_name="documents",
                 query_name="match_documents"
             )
-            vector_store.add_documents(documents)
-            print("🎉 SUCCESS: All Data Ingested Successfully!")
+            
+            # Batch upload logic
+            batch_size = 50
+            total_docs = len(documents)
+            for i in range(0, total_docs, batch_size):
+                batch = documents[i:i + batch_size]
+                vector_store.add_documents(batch)
+                print(f"   ✅ Uploaded batch {i//batch_size + 1}")
+            
+            print("🎉 SUCCESS: All Data Ingested & Synced via API!")
         except Exception as e:
             print(f"❌ Upload Failed: {e}")
     else:

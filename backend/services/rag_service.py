@@ -1,3 +1,4 @@
+
 import os
 from dotenv import load_dotenv
 from supabase import create_client
@@ -27,7 +28,7 @@ embeddings = HuggingFaceEndpointEmbeddings(
 
 def get_rag_response(query_text):
     try:
-        print(f"\n🔍 Searching via API for: {query_text}")
+        # print(f"\n🔍 Searching via API for: {query_text}")
         
         # --- 1. MANUAL RETRIEVAL (Bypassing LangChain Wrapper) ---
         # Pehle query ko vector me convert karo
