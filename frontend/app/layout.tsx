@@ -16,10 +16,9 @@ export const metadata: Metadata = {
   description: "AI Assistant for Indian Government Schemes",
   manifest: "/manifest.json",
   icons: {
-    // ✅ Yahan hum .webp file use karenge
-    icon: "/logo.webp",
-    shortcut: "/logo.webp",
-    apple: "/logo.webp",
+   icon: "/niti-photo.webp",      // Laptop/Desktop Tab Icon
+    shortcut: "/niti-photo.webp", // Mobile Tab Icon
+    apple: "/niti-photo.webp",    // Apple Devices Icon
   },
 };
 
