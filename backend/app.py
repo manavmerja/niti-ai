@@ -20,6 +20,8 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+
+
 # --- SUPABASE SETUP ---
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
@@ -75,10 +77,10 @@ def chat():
                     if conv_res.data:
                         conversation_id = conv_res.data[0]['id']
 
-                # B. Save Messages (If conversation_id is available)
-                if conversation_id:
-                    supabase.table("messages").insert([
-                        {"conversation_id": conversation_id, "role": "user", "content": user_query, "user_id": user_id},
+                        # B. Save Messages (If conversation_id is available)
+                        if conversation_id:
+                            supabase.table("messages").insert([
+                                {"conversation_id": conversation_id, "role": "user", "content": user_query, "user_id": user_id},
                         {"conversation_id": conversation_id, "role": "ai", "content": ai_response, "user_id": user_id}
                     ]).execute()
                     print("✅ Messages Saved!")
