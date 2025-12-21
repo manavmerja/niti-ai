@@ -14,3 +14,7 @@ supabase
 # ZYND
 zyndai-agent
 paho-mqtt
+
+
+bs4
+requests
