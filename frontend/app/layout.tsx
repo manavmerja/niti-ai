@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import MainLayout from "@/components/layout/MainLayout";
-import { ClerkProvider } from "@clerk/nextjs"; // Auth
-import { ThemeProvider } from "@/components/theme-provider"; // <-- YE MISSING THA
+// ❌ Clerk Hata diya
+// import { ClerkProvider } from "@clerk/nextjs"; 
+
+// ✅ Supabase Provider Add kiya
+import SupabaseProvider from "@/components/providers/supabase-provider";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,22 +22,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body className={inter.className}>
-          {/* ThemeProvider wapas aa gaya 👇 */}
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        {/* ✅ ClerkProvider hataya, SupabaseProvider lagaya */}
+        <SupabaseProvider>
           <ThemeProvider
             attribute="class"
-            defaultTheme="dark" // Default Dark kar diya
+            defaultTheme="dark"
             enableSystem
             disableTransitionOnChange
           >
+            {/* Note: MainLayout ke andar hum user check karenge */}
             <MainLayout>
               {children}
             </MainLayout>
           </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+        </SupabaseProvider>
+      </body>
+    </html>
   );
 }

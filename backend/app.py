@@ -11,123 +11,127 @@ try:
     from zyndai_agent.agent import ZyndAIAgent, AgentConfig
     zynd_available = True
     print("✅ ZYND Library Loaded Successfully")
-except ImportError as e:
+except ImportError:
     zynd_available = False
-    print(f"⚠️ ZYND Library NOT Found: {e}")
+    print("⚠️ ZYND Library NOT Found")
 
 load_dotenv()
 
 app = Flask(__name__)
-
-# --- BASIC CORS ---
 CORS(app)
 
 # --- SUPABASE SETUP ---
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-supabase: Client = None
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-if SUPABASE_URL and SUPABASE_KEY:
+# --- HELPER: GENERATE TITLE (Improved) ---
+def generate_title(text):
     try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        print("✅ Supabase Connected!")
-    except Exception as e:
-        print(f"⚠️ Supabase Init Failed: {e}")
-
-# --- ZYND SETUP ---
-niti_agent = None
-if zynd_available:
-    try:
-        # Dummy credentials for demo
-        cred_file = "zynd_credentials.json"
-        with open(cred_file, "w") as f:
-            json.dump({"id": "did:web:zynd.network:niti-ai"}, f)
-            
-        config = AgentConfig(
-            mqtt_broker_url="mqtt://test.mosquitto.org",
-            registry_url="http://localhost:3002",
-            secret_seed="0"*64,
-            identity_credential_path=cred_file
-        )
-        niti_agent = ZyndAIAgent(agent_config=config)
-    except Exception:
-        pass
-
-# --- 🛠️ HELPER: MANUAL CORS HEADERS ---
-def _build_cors_preflight_response():
-    response = make_response()
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "*")
-    response.headers.add("Access-Control-Allow-Methods", "*")
-    return response
-
-def _corsify_actual_response(response):
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    return response
+        if not text:
+            return "New Chat"
+        words = text.split()
+        # Pehle 4-5 words lo
+        title = " ".join(words[:6])
+        if len(words) > 6:
+            title += "..."
+        return title
+    except:
+        return "New Chat"
 
 # --- ROUTES ---
 
 @app.route("/", methods=["GET"])
 def home():
-    return jsonify({"message": "Niti.ai Backend is Live! 🚀"})
+    return jsonify({"message": "Niti.ai Backend is Live with New Schema! 🚀"})
 
-@app.route("/chat", methods=["POST", "OPTIONS"])
+
+@app.route("/chat", methods=["POST"])
 def chat():
-    # ✅ FIX: Manual Preflight Handling
-    if request.method == "OPTIONS":
-        return _build_cors_preflight_response()
-
     try:
         data = request.json
         user_query = data.get("text", "")
-        session_id = data.get("session_id", "guest_user")
-        
+        user_id = data.get("session_id", "guest")
+        conversation_id = data.get("conversation_id")
+
+        print(f"📩 Query: {user_query} | ID: {conversation_id}") # DEBUG LOG
+
+        if not user_query:
+            return jsonify({"error": "No query provided"}), 400
+
         # 1. AI Response
-        response_text = get_rag_response(user_query)
-        
-        # 2. Database & ZYND Logging (Safe Mode)
-        if supabase:
+        ai_response = get_rag_response(user_query)
+
+        # 2. Database Operations
+        if user_id: 
             try:
-                supabase.table("chat_history").insert([
-                    {"role": "user", "content": user_query, "session_id": session_id},
-                    {"role": "ai", "content": response_text, "session_id": session_id}
-                ]).execute()
-            except: pass
+                # A. Create Conversation if it doesn't exist
+                if not conversation_id:
+                    title = generate_title(user_query)
+                    conv_res = supabase.table("conversations").insert({
+                        "user_id": user_id,
+                        "title": title
+                    }).execute()
+                    if conv_res.data:
+                        conversation_id = conv_res.data[0]['id']
 
-        if niti_agent and hasattr(niti_agent, 'log_activity'):
-            try: niti_agent.log_activity(user_query=user_query, agent_response=response_text)
-            except: pass
+                # B. Save Messages (If conversation_id is available)
+                if conversation_id:
+                    supabase.table("messages").insert([
+                        {"conversation_id": conversation_id, "role": "user", "content": user_query, "user_id": user_id},
+                        {"conversation_id": conversation_id, "role": "ai", "content": ai_response, "user_id": user_id}
+                    ]).execute()
+                    print("✅ Messages Saved!")
+            except Exception as e:
+                print(f"❌ DB Save Failed: {e}")
 
-        return _corsify_actual_response(jsonify({"response": response_text}))
-    
+        return jsonify({
+            "response": ai_response,
+            "conversation_id": conversation_id
+        })
+
     except Exception as e:
         print(f"Server Error: {e}")
-        return _corsify_actual_response(jsonify({"response": "⚠️ Internal Server Error"})), 500
+        return jsonify({"response": "⚠️ Server Error"}), 500
 
-@app.route("/history", methods=["GET", "OPTIONS"])
+
+
+# app.py ke 'get_history' function ko isse replace karein:
+@app.route("/history", methods=["GET"])
 def get_history():
-    if request.method == "OPTIONS":
-        return _build_cors_preflight_response()
-        
     try:
-        session_id = request.args.get("session_id")
-        if not session_id or not supabase:
-            return _corsify_actual_response(jsonify([]))
+        user_id = request.args.get("session_id")
+        # Supabase Auth me user_id hamesha UUID hoga
+        if not user_id:
+            return jsonify([])
 
-        response = supabase.table("chat_history")\
+        response = supabase.table("conversations")\
             .select("*")\
-            .eq("session_id", session_id)\
-            .eq("role", "user")\
+            .eq("user_id", user_id)\
             .order("created_at", desc=True)\
-            .limit(10)\
             .execute()
-        return _corsify_actual_response(jsonify(response.data))
-    except:
-        return _corsify_actual_response(jsonify([]))
+
+        return jsonify(response.data)
+    except Exception as e:
+        print(f"History Error: {e}")
+        return jsonify([])
+
+
+# ✅ NEW: Get Full Chat Messages (Jab user click kare)
+@app.route("/chat/<conversation_id>", methods=["GET"])
+def get_chat_messages(conversation_id):
+    try:
+        # Messages layenge specific chat ke liye
+        response = supabase.table("messages")\
+            .select("*")\
+            .eq("conversation_id", conversation_id)\
+            .order("created_at", desc=False)\
+            .execute() # Ascending order (Purana pehle)
+        
+        return jsonify(response.data)
+    except Exception as e:
+        print(f"Chat Load Error: {e}")
+        return jsonify([])
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
-
-
-    
+    app.run(host="0.0.0.0", port=10000)
