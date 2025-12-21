@@ -8,12 +8,26 @@ import MainLayout from "@/components/layout/MainLayout";
 // ✅ Supabase Provider Add kiya
 import SupabaseProvider from "@/components/providers/supabase-provider";
 import { ThemeProvider } from "@/components/theme-provider";
-
+import type { Viewport } from "next";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Niti.ai",
   description: "AI Assistant for Indian Government Schemes",
+  manifest: "/manifest.json",
+  icons: {
+    // ✅ Yahan hum .webp file use karenge
+    icon: "/logo.webp",
+    shortcut: "/logo.webp",
+    apple: "/logo.webp",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
