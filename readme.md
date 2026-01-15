@@ -11,7 +11,7 @@
 
 **Niti.ai** is an Autonomous AI Agent designed to bridge the information gap between Indian citizens and government schemes. Unlike standard chatbots, Niti.ai leverages the **Groq LPU** for ultra-fast inference and the **ZYND Protocol** for verifiable, secure agent communication.
 
-[🔴 **Live Demo Link**](https://niti-ai-rose.vercel.app/) | [📺 **Video Demo**](#)
+[🔴 **Live Demo Link**](https://niti-ai-rose.vercel.app/) |
 
 </div>
 
@@ -93,13 +93,16 @@ npm install
 
 npm run dev
 # App runs at http://localhost:3000
-🛣️ Future Roadmap
+
+---
+
+## 🛣️ Future Roadmap
 🎙️ Voice Interface: Full Audio-to-Audio interaction for illiterate users.
 
 📝 Form Auto-Fill: AI Agents that automatically fill complex government application forms.
 
 🌍 Regional Languages: Expanding support to Tamil, Telugu, Gujarati, and Marathi using Bhashini API.
 
-<div align="center">
+---
 
-Developed with ❤️ by Manav Merja (Team Heisenberg)
+📝 Developed with by Manav Merja (Team Heisenberg)
